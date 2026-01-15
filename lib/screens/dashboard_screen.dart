@@ -69,7 +69,7 @@ class DashboardScreen extends StatelessWidget {
                       width: 200,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1565C0),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(60),
                         boxShadow: [
                           BoxShadow(
@@ -79,16 +79,29 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text(
-                          'IKO',
-                          style: TextStyle(
-                            fontSize: 64,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 2,
-                            fontStyle: FontStyle.italic,
-                          ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(60),
+                        child: Image.network(
+                          'assets/images/iko_logo.jpg',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to text if image fails to load
+                            return Container(
+                              color: const Color(0xFF1565C0),
+                              child: const Center(
+                                child: Text(
+                                  'IKO',
+                                  style: TextStyle(
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
