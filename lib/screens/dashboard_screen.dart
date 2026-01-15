@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import 'products_list_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final User user;
@@ -16,6 +17,9 @@ class DashboardScreen extends StatelessWidget {
             icon: const Icon(Icons.sync),
             onPressed: () {
               // TODO: Implement sync
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Synchronizacja...')),
+              );
             },
           ),
           IconButton(
@@ -72,7 +76,11 @@ class DashboardScreen extends StatelessWidget {
                     subtitle: 'Katalog',
                     color: Colors.blue,
                     onTap: () {
-                      // TODO: Navigate to products
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ProductsListScreen(),
+                        ),
+                      );
                     },
                   ),
                   _buildModuleTile(

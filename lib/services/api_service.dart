@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user.dart';
 import '../models/product.dart';
 import '../models/customer.dart';
 
@@ -25,7 +24,8 @@ class ApiService {
         return handler.next(options);
       },
       onError: (error, handler) {
-        print('API Error: ${error.response?.data}');
+        // TODO: Add proper logging in production
+        // print('API Error: ${error.response?.data}');
         return handler.next(error);
       },
     ));
