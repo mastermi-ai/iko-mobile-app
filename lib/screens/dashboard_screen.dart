@@ -169,16 +169,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               child: Column(
                 children: [
-                  // Top section with logo - large like original app
+                  // Top section with logo - smaller to fit everything on screen
                   Expanded(
-                    flex: 55,
+                    flex: 30,
                     child: Center(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          // Calculate logo size - use most of available space
-                          // On tablet: fill ~60% width, maintain 2:1 aspect ratio
-                          final logoWidth = constraints.maxWidth * 0.6;
-                          final logoHeight = constraints.maxHeight * 0.65;
+                          // Calculate logo size - balanced for tablet view
+                          final logoWidth = constraints.maxWidth * 0.45;
+                          final logoHeight = constraints.maxHeight * 0.8;
 
                           return Image.asset(
                             'assets/images/iko_logo.png',
@@ -252,16 +251,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 15),
 
                   // Bottom section with module buttons
                   Expanded(
-                    flex: 45,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          // Module icons (3x2 grid) - tablet optimized
-                          Column(
+                    flex: 70,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Module icons (3x2 grid) - tablet optimized
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               // First row
                               Row(
@@ -350,21 +351,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ],
                           ),
+                        ),
 
-                          const SizedBox(height: 30),
+                        const SizedBox(height: 15),
 
-                          // Powered by text
-                          const Text(
-                            'Powered by PRODAUT',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
+                        // Powered by text - always visible at bottom
+                        const Text(
+                          'Powered by PRODAUT',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
                           ),
-
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 15),
+                      ],
                     ),
                   ),
                 ],

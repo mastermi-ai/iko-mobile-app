@@ -5,7 +5,8 @@ import '../models/customer.dart';
 import '../models/quote.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000';
+  // Cloudflare tunnel URL for demo (change to production server URL later)
+  static const String baseUrl = 'https://consumers-earrings-wishlist-veterans.trycloudflare.com';
 
   late final Dio _dio;
   String? _token;
@@ -15,6 +16,10 @@ class ApiService {
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
+      headers: {
+        // Required header for localtunnel to bypass warning page
+        'bypass-tunnel-reminder': 'true',
+      },
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
@@ -22,6 +27,8 @@ class ApiService {
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
+        // Always add bypass header for localtunnel
+        options.headers['bypass-tunnel-reminder'] = 'true';
         return handler.next(options);
       },
       onError: (error, handler) {
