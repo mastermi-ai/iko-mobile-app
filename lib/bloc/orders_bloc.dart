@@ -30,7 +30,7 @@ class OrdersLoading extends OrdersState {}
 
 class OrdersLoaded extends OrdersState {
   final List<Map<String, dynamic>> pendingOrders;
-  final List<Order> syncedOrders;
+  final List<Map<String, dynamic>> syncedOrders;
 
   const OrdersLoaded({
     required this.pendingOrders,
@@ -54,7 +54,7 @@ class OrdersError extends OrdersState {
 
 class OrdersRefreshing extends OrdersState {
   final List<Map<String, dynamic>> currentPendingOrders;
-  final List<Order> currentSyncedOrders;
+  final List<Map<String, dynamic>> currentSyncedOrders;
 
   const OrdersRefreshing({
     required this.currentPendingOrders,
@@ -89,10 +89,11 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       // Load pending orders from local DB
       final pendingOrders = await _databaseHelper.getPendingOrders();
 
-      // Try to load synced orders from API
-      List<Order> syncedOrders = [];
+      // Load synced orders from API
+      List<Map<String, dynamic>> syncedOrders = [];
       try {
-        syncedOrders = await _apiService.getOrders();
+        final response = await _apiService.getOrders();
+        syncedOrders = List<Map<String, dynamic>>.from(response);
       } catch (e) {
         // API unavailable - just show pending orders
       }
@@ -123,7 +124,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       final pendingOrders = await _databaseHelper.getPendingOrders();
 
       // Reload synced orders from API
-      final syncedOrders = await _apiService.getOrders();
+      final syncedOrders = List<Map<String, dynamic>>.from(
+        await _apiService.getOrders(),
+      );
 
       emit(OrdersLoaded(
         pendingOrders: pendingOrders,
