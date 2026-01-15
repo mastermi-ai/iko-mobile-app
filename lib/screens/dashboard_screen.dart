@@ -64,38 +64,37 @@ class DashboardScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // IKO Logo
+                    // IKO Logo - MUCH LARGER for tablet
                     Container(
-                      width: 200,
-                      height: 120,
+                      width: 400,
+                      height: 200,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(60),
+                        borderRadius: BorderRadius.circular(100),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(60),
+                        borderRadius: BorderRadius.circular(100),
                         child: Image.network(
                           'assets/images/iko_logo.jpg',
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
-                            // Fallback to text if image fails to load
                             return Container(
                               color: const Color(0xFF1565C0),
                               child: const Center(
                                 child: Text(
                                   'IKO',
                                   style: TextStyle(
-                                    fontSize: 64,
+                                    fontSize: 96,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
-                                    letterSpacing: 2,
+                                    letterSpacing: 4,
                                     fontStyle: FontStyle.italic,
                                   ),
                                 ),
@@ -106,14 +105,14 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 80),
 
-                    // Module icons (3x2 grid)
+                    // Module icons (3x2 grid) - LARGER for tablet
                     Column(
                       children: [
                         // First row
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             _ModuleButton(
                               icon: Icons.inventory_2,
@@ -126,21 +125,21 @@ class DashboardScreen extends StatelessWidget {
                                 );
                               },
                             ),
+                            const SizedBox(width: 60),
                             _ModuleButton(
                               icon: Icons.people,
                               label: 'Klienci',
                               onTap: () {
-                                // TODO: Navigate to customers
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Klienci - wkrótce')),
                                 );
                               },
                             ),
+                            const SizedBox(width: 60),
                             _ModuleButton(
                               icon: Icons.description,
                               label: 'Zamówienia',
                               onTap: () {
-                                // TODO: Navigate to orders
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Zamówienia - wkrótce')),
                                 );
@@ -149,37 +148,36 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 50),
 
                         // Second row
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             _ModuleButton(
                               icon: Icons.local_offer,
                               label: 'Oferty',
                               onTap: () {
-                                // TODO: Navigate to offers
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Oferty - wkrótce')),
                                 );
                               },
                             ),
+                            const SizedBox(width: 60),
                             _ModuleButton(
                               icon: Icons.shopping_cart,
                               label: 'Koszyk',
                               onTap: () {
-                                // TODO: Navigate to cart
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Koszyk - wkrótce')),
                                 );
                               },
                             ),
+                            const SizedBox(width: 60),
                             _ModuleButton(
                               icon: Icons.folder,
                               label: 'Schowki',
                               onTap: () {
-                                // TODO: Navigate to folders
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Schowki - wkrótce')),
                                 );
@@ -190,13 +188,13 @@ class DashboardScreen extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 60),
 
                     // Powered by text
                     const Text(
                       'Powered by PRODAUT',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         color: Colors.black45,
                       ),
                     ),
@@ -226,39 +224,47 @@ class _ModuleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(70),
       child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        width: 140,
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Outer gray ring + inner blue circle (tablet style)
             Container(
-              width: 80,
-              height: 80,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
-                color: const Color(0xFF1976D2),
+                color: Colors.grey[400],
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: Colors.white,
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1976D2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 50,
+                  color: Colors.white,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
               textAlign: TextAlign.center,
