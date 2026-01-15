@@ -454,7 +454,7 @@ class _CartSummary extends StatelessWidget {
 
       // Try to sync with Cloud API
       try {
-        await ApiService().createOrder(order);
+        await ApiService().createOrder(order.toJson());
       } catch (e) {
         // API sync failed - order will be synced later in background
         // ignore: avoid_print
