@@ -3,6 +3,7 @@ import '../models/user.dart';
 import 'products_list_screen.dart';
 import 'customers_list_screen.dart';
 import 'cart_screen.dart';
+import 'orders_list_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final User user;
@@ -144,8 +145,10 @@ class DashboardScreen extends StatelessWidget {
                               icon: Icons.description,
                               label: 'Zamówienia',
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Zamówienia - wkrótce')),
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const OrdersListScreen(),
+                                  ),
                                 );
                               },
                             ),
