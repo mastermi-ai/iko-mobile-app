@@ -7,7 +7,9 @@ import '../../services/api_service.dart';
 import 'product_detail_screen.dart';
 
 class ProductsListScreen extends StatelessWidget {
-  const ProductsListScreen({super.key});
+  final bool autoFocusSearch;
+
+  const ProductsListScreen({super.key, this.autoFocusSearch = false});
 
   @override
   Widget build(BuildContext context) {
@@ -16,13 +18,15 @@ class ProductsListScreen extends StatelessWidget {
         databaseHelper: DatabaseHelper.instance,
         apiService: ApiService(),
       )..add(LoadProducts()),
-      child: const ProductsListView(),
+      child: ProductsListView(autoFocusSearch: autoFocusSearch),
     );
   }
 }
 
 class ProductsListView extends StatefulWidget {
-  const ProductsListView({super.key});
+  final bool autoFocusSearch;
+
+  const ProductsListView({super.key, this.autoFocusSearch = false});
 
   @override
   State<ProductsListView> createState() => _ProductsListViewState();
@@ -30,7 +34,13 @@ class ProductsListView extends StatefulWidget {
 
 class _ProductsListViewState extends State<ProductsListView> {
   final _searchController = TextEditingController();
-  bool _isSearching = false;
+  late bool _isSearching;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSearching = widget.autoFocusSearch;
+  }
 
   @override
   void dispose() {
@@ -241,7 +251,7 @@ class ProductCard extends StatelessWidget {
                     : const Icon(Icons.inventory_2, size: 40, color: Colors.grey),
               ),
               const SizedBox(width: 12),
-              
+
               // Product Info
               Expanded(
                 child: Column(
@@ -298,7 +308,7 @@ class ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Arrow
               const Icon(Icons.chevron_right, color: Colors.grey),
             ],

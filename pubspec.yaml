@@ -33,34 +33,38 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-  
+
   # State Management
   flutter_bloc: ^8.1.6
   equatable: ^2.0.7
-  
+
   # Network
   dio: ^5.7.0
   pretty_dio_logger: ^1.4.0
-  
+
   # Local Database (SQLite)
   sqflite: ^2.4.1
   path: ^1.9.1
-  
+
   # Storage
   shared_preferences: ^2.3.3
-  
+
   # JSON Serialization
   json_annotation: ^4.9.0
-  
+
   # Utilities
   intl: ^0.19.0
+
+  # Background Tasks
+  workmanager: ^0.5.2
+  connectivity_plus: ^6.0.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
-  
+
   # Code Generation
   build_runner: ^2.4.13
   json_serializable: ^6.9.2

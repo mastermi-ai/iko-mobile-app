@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/product.dart';
 import '../models/customer.dart';
+import '../models/quote.dart';
+import '../models/saved_cart.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -21,9 +23,48 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add pending_quotes table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS pending_quotes (
+          local_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          customer_id INTEGER,
+          customer_name TEXT,
+          quote_date TEXT NOT NULL,
+          valid_until TEXT,
+          status TEXT DEFAULT 'draft',
+          notes TEXT,
+          total_netto REAL NOT NULL,
+          total_brutto REAL,
+          items_json TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          synced INTEGER DEFAULT 0
+        )
+      ''');
+    }
+    if (oldVersion < 3) {
+      // Add saved_carts table (schowki)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS saved_carts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          customer_id INTEGER,
+          customer_name TEXT,
+          items_json TEXT NOT NULL,
+          total_netto REAL NOT NULL,
+          total_brutto REAL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -86,6 +127,37 @@ class DatabaseHelper {
         items_json $textType,
         created_at $textType,
         synced INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE pending_quotes (
+        local_id $idType,
+        customer_id INTEGER,
+        customer_name $textTypeNullable,
+        quote_date $textType,
+        valid_until $textTypeNullable,
+        status $textType DEFAULT 'draft',
+        notes $textTypeNullable,
+        total_netto $realType,
+        total_brutto $realTypeNullable,
+        items_json $textType,
+        created_at $textType,
+        synced INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE saved_carts (
+        id $idType,
+        name $textType,
+        customer_id INTEGER,
+        customer_name $textTypeNullable,
+        items_json $textType,
+        total_netto $realType,
+        total_brutto $realTypeNullable,
+        created_at $textType,
+        updated_at $textType
       )
     ''');
   }
@@ -171,7 +243,7 @@ class DatabaseHelper {
   // Pending Orders (offline queue)
   Future<int> insertPendingOrder(dynamic order) async {
     final db = await database;
-    
+
     // Convert Order object to database map
     final orderData = {
       'customer_id': order.customerId,
@@ -183,7 +255,7 @@ class DatabaseHelper {
       'created_at': DateTime.now().toIso8601String(),
       'synced': 0,
     };
-    
+
     return await db.insert('pending_orders', orderData);
   }
 
@@ -205,6 +277,175 @@ class DatabaseHelper {
       where: 'local_id = ?',
       whereArgs: [localId],
     );
+  }
+
+  // ============================================
+  // QUOTES (Oferty)
+  // ============================================
+
+  /// Insert a new quote to local database
+  Future<int> insertQuote(Quote quote) async {
+    final db = await database;
+    return await db.insert('pending_quotes', quote.toDatabase());
+  }
+
+  /// Get all pending (not synced) quotes
+  Future<List<Quote>> getPendingQuotes() async {
+    final db = await database;
+    final result = await db.query(
+      'pending_quotes',
+      where: 'synced = ?',
+      whereArgs: [0],
+      orderBy: 'created_at DESC',
+    );
+    return result.map((map) => Quote.fromDatabase(map)).toList();
+  }
+
+  /// Get all quotes (both synced and pending)
+  Future<List<Quote>> getAllLocalQuotes() async {
+    final db = await database;
+    final result = await db.query(
+      'pending_quotes',
+      orderBy: 'created_at DESC',
+    );
+    return result.map((map) => Quote.fromDatabase(map)).toList();
+  }
+
+  /// Get quote by local ID
+  Future<Quote?> getQuoteByLocalId(int localId) async {
+    final db = await database;
+    final result = await db.query(
+      'pending_quotes',
+      where: 'local_id = ?',
+      whereArgs: [localId],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return Quote.fromDatabase(result.first);
+  }
+
+  /// Update quote status
+  Future<int> updateQuoteStatus(int localId, String status) async {
+    final db = await database;
+    return await db.update(
+      'pending_quotes',
+      {'status': status},
+      where: 'local_id = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  /// Mark quote as synced
+  Future<int> markQuoteAsSynced(int localId) async {
+    final db = await database;
+    return await db.update(
+      'pending_quotes',
+      {'synced': 1},
+      where: 'local_id = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  /// Delete quote by local ID
+  Future<int> deleteQuote(int localId) async {
+    final db = await database;
+    return await db.delete(
+      'pending_quotes',
+      where: 'local_id = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  /// Delete all synced quotes (cleanup)
+  Future<int> deleteSyncedQuotes() async {
+    final db = await database;
+    return await db.delete(
+      'pending_quotes',
+      where: 'synced = ?',
+      whereArgs: [1],
+    );
+  }
+
+  // ============================================
+  // SAVED CARTS (Schowki)
+  // ============================================
+
+  /// Save current cart as a "schowek"
+  Future<int> saveCart(SavedCart cart) async {
+    final db = await database;
+    return await db.insert('saved_carts', cart.toDatabase());
+  }
+
+  /// Get all saved carts
+  Future<List<SavedCart>> getSavedCarts() async {
+    final db = await database;
+    final result = await db.query(
+      'saved_carts',
+      orderBy: 'updated_at DESC',
+    );
+    return result.map((map) => SavedCart.fromDatabase(map)).toList();
+  }
+
+  /// Get saved cart by ID
+  Future<SavedCart?> getSavedCartById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'saved_carts',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return SavedCart.fromDatabase(result.first);
+  }
+
+  /// Update saved cart
+  Future<int> updateSavedCart(int id, SavedCart cart) async {
+    final db = await database;
+    final data = cart.toDatabase();
+    data['updated_at'] = DateTime.now().toIso8601String();
+    return await db.update(
+      'saved_carts',
+      data,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Rename saved cart
+  Future<int> renameSavedCart(int id, String newName) async {
+    final db = await database;
+    return await db.update(
+      'saved_carts',
+      {
+        'name': newName,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Delete saved cart
+  Future<int> deleteSavedCart(int id) async {
+    final db = await database;
+    return await db.delete(
+      'saved_carts',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Search saved carts by name
+  Future<List<SavedCart>> searchSavedCarts(String query) async {
+    final db = await database;
+    final result = await db.query(
+      'saved_carts',
+      where: 'name LIKE ?',
+      whereArgs: ['%$query%'],
+      orderBy: 'updated_at DESC',
+    );
+    return result.map((map) => SavedCart.fromDatabase(map)).toList();
   }
 
   Future close() async {

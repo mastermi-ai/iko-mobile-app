@@ -1,214 +1,373 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import '../services/sync_service.dart';
 import 'products_list_screen.dart';
 import 'customers_list_screen.dart';
 import 'cart_screen.dart';
 import 'orders_list_screen.dart';
+import 'quotes_list_screen.dart';
+import 'saved_carts_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final User user;
 
   const DashboardScreen({super.key, required this.user});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool _isSyncing = false;
+
+  Future<void> _performSync() async {
+    if (_isSyncing) return;
+
+    setState(() => _isSyncing = true);
+
+    try {
+      final result = await SyncService.instance.performFullSync();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  result.success ? Icons.check_circle : Icons.error,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        result.success ? 'Synchronizacja zakończona' : 'Błąd synchronizacji',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      if (result.hasChanges)
+                        Text(
+                          result.summary,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: result.success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[300],
       appBar: AppBar(
-        title: const Text('IKO'),
-        backgroundColor: Colors.grey[700],
-        elevation: 0,
+        title: const Text(
+          'IKO',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.grey[800],
+        foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
+          // Search button (like original) - opens products with search
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // TODO: Global search
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ProductsListScreen(autoFocusSearch: true),
+                ),
+              );
             },
+            tooltip: 'Szukaj produktów',
           ),
+          // Sync button (like original)
           IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: Settings
-            },
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.sync),
+            onPressed: _isSyncing ? null : _performSync,
+            tooltip: 'Synchronizuj',
           ),
         ],
       ),
       body: Column(
         children: [
-          // User info bar
+          // User info bar (matching original style)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: Colors.grey[400],
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            color: Colors.grey[600],
             child: Row(
               children: [
-                const Icon(Icons.person, size: 20, color: Colors.black54),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    user.clientName,
+                    widget.user.clientName.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(Icons.notifications_outlined, size: 20, color: Colors.black54),
+                // Customers icon (like in original)
+                IconButton(
+                  icon: const Icon(Icons.people, size: 22, color: Colors.white),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CustomersListScreen(),
+                      ),
+                    );
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Klienci',
+                ),
               ],
             ),
           ),
 
-          // Main content
+          // Main content with gradient background like original
           Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // IKO Logo - MUCH LARGER for tablet
-                    Container(
-                      width: 400,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(100),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: Image.network(
-                          'assets/images/iko_logo.jpg',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: const Color(0xFF1565C0),
-                              child: const Center(
-                                child: Text(
-                                  'IKO',
-                                  style: TextStyle(
-                                    fontSize: 96,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 4,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 80),
-
-                    // Module icons (3x2 grid) - LARGER for tablet
-                    Column(
-                      children: [
-                        // First row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _ModuleButton(
-                              icon: Icons.inventory_2,
-                              label: 'Produkty',
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const ProductsListScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 60),
-                            _ModuleButton(
-                              icon: Icons.people,
-                              label: 'Klienci',
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const CustomersListScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 60),
-                            _ModuleButton(
-                              icon: Icons.description,
-                              label: 'Zamówienia',
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const OrdersListScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 50),
-
-                        // Second row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _ModuleButton(
-                              icon: Icons.local_offer,
-                              label: 'Oferty',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Oferty - wkrótce')),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 60),
-                            _ModuleButton(
-                              icon: Icons.shopping_cart,
-                              label: 'Koszyk',
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const CartScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 60),
-                            _ModuleButton(
-                              icon: Icons.folder,
-                              label: 'Schowki',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Schowki - wkrótce')),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 60),
-
-                    // Powered by text
-                    const Text(
-                      'Powered by PRODAUT',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black45,
-                      ),
-                    ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.grey[400]!,
+                    Colors.grey[350]!,
+                    Colors.grey[300]!,
                   ],
                 ),
+              ),
+              child: Column(
+                children: [
+                  // Top section with logo - large like original app
+                  Expanded(
+                    flex: 55,
+                    child: Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Calculate logo size - use most of available space
+                          // On tablet: fill ~60% width, maintain 2:1 aspect ratio
+                          final logoWidth = constraints.maxWidth * 0.6;
+                          final logoHeight = constraints.maxHeight * 0.65;
+
+                          return Image.asset(
+                            'assets/images/iko_logo.png',
+                            width: logoWidth,
+                            height: logoHeight,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback: Draw IKO logo similar to original
+                              return Container(
+                                width: logoWidth,
+                                height: logoHeight,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      const Color(0xFF2196F3),
+                                      const Color(0xFF1565C0),
+                                      const Color(0xFF0D47A1),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(logoHeight / 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.3),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'IKO',
+                                    style: TextStyle(
+                                      fontSize: logoHeight * 0.5,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 8,
+                                      fontStyle: FontStyle.italic,
+                                      shadows: const [
+                                        Shadow(
+                                          color: Colors.black38,
+                                          offset: Offset(3, 3),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  // Divider line like in original
+                  Container(
+                    height: 2,
+                    margin: const EdgeInsets.symmetric(horizontal: 40),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.grey[500]!,
+                          Colors.grey[500]!,
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Bottom section with module buttons
+                  Expanded(
+                    flex: 45,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Module icons (3x2 grid) - tablet optimized
+                          Column(
+                            children: [
+                              // First row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _ModuleButton(
+                                    icon: Icons.inventory_2,
+                                    label: 'Produkty',
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const ProductsListScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 40),
+                                  _ModuleButton(
+                                    icon: Icons.people,
+                                    label: 'Klienci',
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const CustomersListScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 40),
+                                  _ModuleButton(
+                                    icon: Icons.description,
+                                    label: 'Zamówienia',
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const OrdersListScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 25),
+
+                              // Second row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _ModuleButton(
+                                    icon: Icons.local_offer,
+                                    label: 'Oferty',
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const QuotesListScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 40),
+                                  _ModuleButton(
+                                    icon: Icons.shopping_cart,
+                                    label: 'Koszyk',
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const CartScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 40),
+                                  _ModuleButton(
+                                    icon: Icons.folder,
+                                    label: 'Schowki',
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const SavedCartsScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          // Powered by text
+                          const Text(
+                            'Powered by PRODAUT',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -235,44 +394,72 @@ class _ModuleButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(70),
       child: Container(
-        width: 140,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        width: 130,
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Outer gray ring + inner blue circle (tablet style)
+            // Outer gray ring with gradient + inner blue circle (matching original tablet style)
             Container(
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
-                color: Colors.grey[400],
                 shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.grey[200]!,
+                    Colors.grey[350]!,
+                    Colors.grey[400]!,
+                  ],
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    blurRadius: 4,
+                    offset: const Offset(-2, -2),
+                  ),
                 ],
               ),
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1976D2),
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF42A5F5), // Lighter blue at top
+                      Color(0xFF1976D2), // Medium blue
+                      Color(0xFF1565C0), // Darker blue at bottom
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   icon,
-                  size: 50,
+                  size: 40,
                   color: Colors.white,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),

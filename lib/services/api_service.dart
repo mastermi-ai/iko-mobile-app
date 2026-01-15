@@ -2,10 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
 import '../models/customer.dart';
+import '../models/quote.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:3000';
-  
+
   late final Dio _dio;
   String? _token;
 
@@ -108,6 +109,63 @@ class ApiService {
       return List<Map<String, dynamic>>.from(response.data);
     } on DioException catch (e) {
       throw Exception('Failed to get orders: ${e.message}');
+    }
+  }
+
+  // ============================================
+  // QUOTES (Oferty)
+  // ============================================
+
+  // Create Quote
+  Future<Map<String, dynamic>> createQuote(Map<String, dynamic> quoteData) async {
+    try {
+      final response = await _dio.post('/quotes', data: quoteData);
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception('Failed to create quote: ${e.response?.data['message'] ?? e.message}');
+    }
+  }
+
+  // Get Quotes
+  Future<List<Quote>> getQuotes() async {
+    try {
+      final response = await _dio.get('/quotes');
+      final data = response.data as List;
+      return data.map((json) => Quote.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to get quotes: ${e.message}');
+    }
+  }
+
+  // Get Quote by ID
+  Future<Quote> getQuote(int id) async {
+    try {
+      final response = await _dio.get('/quotes/$id');
+      return Quote.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to get quote: ${e.message}');
+    }
+  }
+
+  // Update Quote Status
+  Future<Quote> updateQuoteStatus(int id, String status) async {
+    try {
+      final response = await _dio.patch('/quotes/$id/status', data: {
+        'status': status,
+      });
+      return Quote.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update quote status: ${e.message}');
+    }
+  }
+
+  // Convert Quote to Order
+  Future<Map<String, dynamic>> convertQuoteToOrder(int quoteId) async {
+    try {
+      final response = await _dio.post('/quotes/$quoteId/convert');
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception('Failed to convert quote: ${e.response?.data['message'] ?? e.message}');
     }
   }
 }

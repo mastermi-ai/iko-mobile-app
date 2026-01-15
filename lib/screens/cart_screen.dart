@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../bloc/cart_cubit.dart';
-import '../../models/cart_item.dart';
-import '../../models/order.dart';
-import '../../database/database_helper.dart';
-import '../../services/api_service.dart';
+import '../bloc/cart_cubit.dart';
+import '../models/cart_item.dart';
+import '../models/order.dart';
+import '../models/quote.dart';
+import '../database/database_helper.dart';
+import '../services/api_service.dart';
 import 'customers_list_screen.dart';
 
 class CartScreen extends StatelessWidget {
@@ -386,30 +387,198 @@ class _CartSummary extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: state.canCheckout
-                  ? () => _createOrder(context)
-                  : null,
-              icon: const Icon(Icons.check_circle),
-              label: Text(
-                state.selectedCustomer == null
-                    ? 'Wybierz klienta aby kontynuować'
-                    : 'Utwórz zamówienie',
-                style: const TextStyle(fontSize: 16),
+
+          // Action buttons row
+          Row(
+            children: [
+              // Create Quote button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: state.canCheckout
+                      ? () => _createQuote(context)
+                      : null,
+                  icon: const Icon(Icons.local_offer),
+                  label: const Text(
+                    'Utwórz ofertę',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange[700],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                disabledBackgroundColor: Colors.grey[300],
+              const SizedBox(width: 12),
+              // Create Order button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: state.canCheckout
+                      ? () => _createOrder(context)
+                      : null,
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text(
+                    'Utwórz zamówienie',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[700],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                ),
               ),
+            ],
+          ),
+
+          // Info text when customer not selected
+          if (state.selectedCustomer == null && state.items.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Wybierz klienta aby kontynuować',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.orange[700],
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createQuote(BuildContext context) async {
+    final cartCubit = context.read<CartCubit>();
+    final cart = cartCubit.getCurrentCart();
+
+    // Show validity period dialog
+    final validDays = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ważność oferty'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Wybierz okres ważności oferty:'),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _ValidityChip(days: 7, onTap: () => Navigator.of(dialogContext).pop(7)),
+                _ValidityChip(days: 14, onTap: () => Navigator.of(dialogContext).pop(14)),
+                _ValidityChip(days: 30, onTap: () => Navigator.of(dialogContext).pop(30)),
+                _ValidityChip(days: 60, onTap: () => Navigator.of(dialogContext).pop(60)),
+                _ValidityChip(days: 90, onTap: () => Navigator.of(dialogContext).pop(90)),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(null),
+            child: const Text('Anuluj'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(0), // 0 = no expiry
+            child: const Text('Bez terminu'),
           ),
         ],
       ),
     );
+
+    if (validDays == null || !context.mounted) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Calculate validity date
+      DateTime? validUntil;
+      if (validDays > 0) {
+        validUntil = DateTime.now().add(Duration(days: validDays));
+      }
+
+      // Create quote object
+      final quote = Quote(
+        customerId: cart.selectedCustomer!.id,
+        customerName: cart.selectedCustomer!.name,
+        quoteDate: DateTime.now(),
+        validUntil: validUntil,
+        status: 'draft',
+        totalNetto: cart.totalNetto,
+        totalBrutto: cart.totalBrutto,
+        items: cart.items
+            .map((item) => QuoteItem(
+                  productId: item.product.id!,
+                  productCode: item.product.code,
+                  productName: item.product.name,
+                  quantity: item.quantity.toDouble(),
+                  priceNetto: item.product.priceNetto,
+                  priceBrutto: item.product.priceBrutto,
+                  vatRate: item.product.vatRate ?? 23,
+                  total: item.totalNetto,
+                ))
+            .toList(),
+      );
+
+      // Save to local database
+      await DatabaseHelper.instance.insertQuote(quote);
+
+      // Try to sync with Cloud API
+      try {
+        await ApiService().createQuote(quote.toJson());
+      } catch (e) {
+        // API sync failed - quote will be synced later
+      }
+
+      // Clear cart
+      cartCubit.clearCart();
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              validUntil != null
+                  ? 'Oferta utworzona! Ważna do ${validUntil.day}.${validUntil.month}.${validUntil.year}'
+                  : 'Oferta utworzona pomyślnie!',
+            ),
+            backgroundColor: Colors.orange[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Go back to dashboard
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+
+        // Show error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Błąd tworzenia oferty: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _createOrder(BuildContext context) async {
@@ -494,5 +663,28 @@ class _CartSummary extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+class _ValidityChip extends StatelessWidget {
+  final int days;
+  final VoidCallback onTap;
+
+  const _ValidityChip({
+    required this.days,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text('$days dni'),
+      onPressed: onTap,
+      backgroundColor: Colors.orange[100],
+      labelStyle: TextStyle(
+        color: Colors.orange[800],
+        fontWeight: FontWeight.w600,
+      ),
+    );
   }
 }
