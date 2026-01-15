@@ -69,20 +69,26 @@ class DashboardScreen extends StatelessWidget {
                       width: 200,
                       height: 120,
                       decoration: BoxDecoration(
+                        color: const Color(0xFF1565C0),
                         borderRadius: BorderRadius.circular(60),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(60),
-                        child: Image.asset(
-                          'assets/images/iko_logo.jpg',
-                          fit: BoxFit.cover,
+                      child: const Center(
+                        child: Text(
+                          'IKO',
+                          style: TextStyle(
+                            fontSize: 64,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 2,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ),
@@ -175,7 +181,7 @@ class DashboardScreen extends StatelessWidget {
 
                     // Powered by text
                     const Text(
-                      'Powered by HIVEDI',
+                      'Powered by PRODAUT',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.black45,
