@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/product.dart';
+import '../../bloc/cart_cubit.dart';
+import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -15,11 +18,21 @@ class ProductDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add_shopping_cart),
             onPressed: () {
-              // TODO: Add to cart
+              context.read<CartCubit>().addProduct(product);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Dodano do koszyka'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text('${product.name} dodano do koszyka'),
+                  action: SnackBarAction(
+                    label: 'KOSZYK',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CartScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  duration: const Duration(seconds: 3),
                 ),
               );
             },
@@ -198,16 +211,21 @@ class ProductDetailScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: Implement add to cart
+                        context.read<CartCubit>().addProduct(product);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('${product.name} dodano do koszyka'),
                             action: SnackBarAction(
                               label: 'KOSZYK',
                               onPressed: () {
-                                // TODO: Navigate to cart
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const CartScreen(),
+                                  ),
+                                );
                               },
                             ),
+                            duration: const Duration(seconds: 3),
                           ),
                         );
                       },

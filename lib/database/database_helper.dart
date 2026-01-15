@@ -169,6 +169,24 @@ class DatabaseHelper {
   }
 
   // Pending Orders (offline queue)
+  Future<int> insertPendingOrder(dynamic order) async {
+    final db = await database;
+    
+    // Convert Order object to database map
+    final orderData = {
+      'customer_id': order.customerId,
+      'order_date': order.orderDate.toIso8601String(),
+      'notes': order.notes,
+      'total_netto': order.totalNetto,
+      'total_brutto': order.totalBrutto,
+      'items_json': order.toJson()['items'].toString(),
+      'created_at': DateTime.now().toIso8601String(),
+      'synced': 0,
+    };
+    
+    return await db.insert('pending_orders', orderData);
+  }
+
   Future<int> savePendingOrder(Map<String, dynamic> orderData) async {
     final db = await database;
     return await db.insert('pending_orders', orderData);

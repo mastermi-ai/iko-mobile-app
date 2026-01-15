@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import 'products_list_screen.dart';
 import 'customers_list_screen.dart';
+import 'cart_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final User user;
@@ -171,8 +172,10 @@ class DashboardScreen extends StatelessWidget {
                               icon: Icons.shopping_cart,
                               label: 'Koszyk',
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Koszyk - wkrótce')),
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const CartScreen(),
+                                  ),
                                 );
                               },
                             ),
