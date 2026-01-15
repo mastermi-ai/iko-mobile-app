@@ -69,7 +69,6 @@ class DashboardScreen extends StatelessWidget {
                       width: 200,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1976D2),
                         borderRadius: BorderRadius.circular(60),
                         boxShadow: [
                           BoxShadow(
@@ -79,15 +78,11 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text(
-                          'IKO',
-                          style: TextStyle(
-                            fontSize: 56,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 4,
-                          ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(60),
+                        child: Image.asset(
+                          'assets/images/iko_logo.jpg',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
