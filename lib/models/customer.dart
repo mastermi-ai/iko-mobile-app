@@ -1,3 +1,10 @@
+/// Kontrahent (Klient) z nexo PRO
+/// 
+/// ROZRACHUNKI (wymaganie klienta):
+/// - Pole `balance` zawiera saldo należności klienta
+/// - Wartość dodatnia = klient jest winien firmie
+/// - Wartość ujemna = nadpłata klienta
+/// - Pobierane z nexo przez Bridge
 class Customer {
   final int id;
   final int clientId;
@@ -14,6 +21,15 @@ class Customer {
   final String? regon;
   final String? voivodeship;
   final DateTime? syncedAt;
+  
+  // ROZRACHUNKI - wymaganie klienta
+  /// Saldo należności klienta (ile jest winien firmie)
+  /// Wartość dodatnia = dług, ujemna = nadpłata
+  final double? balance;
+  /// Data ostatniej aktualizacji salda
+  final DateTime? balanceUpdatedAt;
+  /// Limit kredytowy klienta (opcjonalnie)
+  final double? creditLimit;
 
   Customer({
     required this.id,
@@ -31,7 +47,17 @@ class Customer {
     this.regon,
     this.voivodeship,
     this.syncedAt,
+    this.balance,
+    this.balanceUpdatedAt,
+    this.creditLimit,
   });
+
+  /// Czy klient ma zaległości
+  bool get hasDebt => (balance ?? 0) > 0;
+  
+  /// Czy klient przekroczył limit kredytowy
+  bool get isOverCreditLimit => 
+      creditLimit != null && (balance ?? 0) > creditLimit!;
 
   factory Customer.fromJson(Map<String, dynamic> json) {
     return Customer(
@@ -51,6 +77,16 @@ class Customer {
       voivodeship: json['voivodeship'] as String?,
       syncedAt: json['syncedAt'] != null 
           ? DateTime.parse(json['syncedAt'] as String) 
+          : null,
+      // Rozrachunki
+      balance: json['balance'] != null 
+          ? (json['balance'] as num).toDouble() 
+          : null,
+      balanceUpdatedAt: json['balanceUpdatedAt'] != null 
+          ? DateTime.parse(json['balanceUpdatedAt'] as String) 
+          : null,
+      creditLimit: json['creditLimit'] != null 
+          ? (json['creditLimit'] as num).toDouble() 
           : null,
     );
   }
@@ -72,6 +108,10 @@ class Customer {
       'regon': regon,
       'voivodeship': voivodeship,
       'synced_at': syncedAt?.toIso8601String(),
+      // Rozrachunki
+      'balance': balance,
+      'balance_updated_at': balanceUpdatedAt?.toIso8601String(),
+      'credit_limit': creditLimit,
     };
   }
 
@@ -94,6 +134,24 @@ class Customer {
       syncedAt: map['synced_at'] != null 
           ? DateTime.parse(map['synced_at'] as String) 
           : null,
+      // Rozrachunki
+      balance: map['balance'] != null 
+          ? (map['balance'] as num).toDouble() 
+          : null,
+      balanceUpdatedAt: map['balance_updated_at'] != null 
+          ? DateTime.parse(map['balance_updated_at'] as String) 
+          : null,
+      creditLimit: map['credit_limit'] != null 
+          ? (map['credit_limit'] as num).toDouble() 
+          : null,
     );
+  }
+
+  /// Formatowane saldo do wyświetlenia
+  String get formattedBalance {
+    if (balance == null) return 'Brak danych';
+    if (balance! > 0) return '+${balance!.toStringAsFixed(2)} zł (należność)';
+    if (balance! < 0) return '${balance!.toStringAsFixed(2)} zł (nadpłata)';
+    return '0.00 zł (rozliczone)';
   }
 }
