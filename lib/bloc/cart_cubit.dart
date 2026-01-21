@@ -5,40 +5,103 @@ import '../models/product.dart';
 import '../models/customer.dart';
 
 /// Cart state holding items and selected customer
+/// 
+/// LOGIKA NOWYCH KLIENTÓW (wymaganie klienta):
+/// - Jeśli `isNewCustomer` == true → zamówienie dla NOWEGO klienta
+/// - `newCustomerData` zawiera NIP, nazwę, adres (wpisywane w uwagi ZK)
+/// - Biuro tworzy kartę kontrahenta w nexo przed przetworzeniem
 class CartState extends Equatable {
   final List<CartItem> items;
   final Customer? selectedCustomer;
+  
+  /// Czy zamówienie jest dla nowego klienta (nie z bazy)
+  final bool isNewCustomer;
+  /// Dane nowego klienta: "NIP: xxx, Nazwa: xxx, Adres: xxx"
+  /// Wpisywane w pole UWAGI zamówienia (ZK) w nexo
+  final String? newCustomerData;
+  /// Dodatkowe uwagi do zamówienia
+  final String? orderNotes;
 
   const CartState({
     this.items = const [],
     this.selectedCustomer,
+    this.isNewCustomer = false,
+    this.newCustomerData,
+    this.orderNotes,
   });
 
   /// Total number of items in cart
   int get itemCount => items.fold(0, (sum, item) => sum + item.quantity);
 
-  /// Total cart value (netto)
+  /// Total cart value (netto) - CENY PÓŁKOWE (bazowe)
   double get totalNetto => items.fold(0.0, (sum, item) => sum + item.totalNetto);
 
   /// Total cart value (brutto with VAT)
   double get totalBrutto => items.fold(0.0, (sum, item) => sum + item.totalBrutto);
 
-  /// Check if cart is ready for checkout (has items and customer)
-  bool get canCheckout => items.isNotEmpty && selectedCustomer != null;
+  /// Check if cart is ready for checkout
+  /// Można zamówić dla:
+  /// 1. Wybranego klienta z bazy
+  /// 2. LUB nowego klienta (z wypełnionymi danymi NIP/nazwa)
+  bool get canCheckout {
+    if (items.isEmpty) return false;
+    
+    // Istniejący klient wybrany
+    if (selectedCustomer != null) return true;
+    
+    // Nowy klient - musi mieć wypełnione dane
+    if (isNewCustomer && newCustomerData != null && newCustomerData!.trim().isNotEmpty) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /// Nazwa klienta do wyświetlenia
+  String get customerDisplayName {
+    if (selectedCustomer != null) return selectedCustomer!.name;
+    if (isNewCustomer) return 'NOWY KLIENT';
+    return 'Nie wybrano';
+  }
+  
+  /// Pełne uwagi do zamówienia (łącznie z danymi nowego klienta)
+  String? get fullOrderNotes {
+    final parts = <String>[];
+    
+    // Dane nowego klienta jako pierwsza część uwag
+    if (isNewCustomer && newCustomerData != null && newCustomerData!.isNotEmpty) {
+      parts.add('[NOWY KLIENT]\n$newCustomerData');
+    }
+    
+    // Dodatkowe uwagi
+    if (orderNotes != null && orderNotes!.isNotEmpty) {
+      parts.add(orderNotes!);
+    }
+    
+    return parts.isEmpty ? null : parts.join('\n\n');
+  }
 
   CartState copyWith({
     List<CartItem>? items,
     Customer? selectedCustomer,
     bool clearCustomer = false,
+    bool? isNewCustomer,
+    String? newCustomerData,
+    bool clearNewCustomerData = false,
+    String? orderNotes,
+    bool clearOrderNotes = false,
   }) {
     return CartState(
       items: items ?? this.items,
       selectedCustomer: clearCustomer ? null : (selectedCustomer ?? this.selectedCustomer),
+      isNewCustomer: isNewCustomer ?? this.isNewCustomer,
+      newCustomerData: clearNewCustomerData ? null : (newCustomerData ?? this.newCustomerData),
+      orderNotes: clearOrderNotes ? null : (orderNotes ?? this.orderNotes),
     );
   }
 
   @override
-  List<Object?> get props => [items, selectedCustomer];
+  List<Object?> get props => [items, selectedCustomer, isNewCustomer, newCustomerData, orderNotes];
 }
 
 /// Cart Cubit for managing shopping cart state
@@ -85,14 +148,47 @@ class CartCubit extends Cubit<CartState> {
     emit(state.copyWith(items: items));
   }
 
-  /// Set customer for this order
+  /// Set customer for this order (istniejący klient z bazy)
   void selectCustomer(Customer customer) {
-    emit(state.copyWith(selectedCustomer: customer));
+    emit(state.copyWith(
+      selectedCustomer: customer,
+      isNewCustomer: false,
+      clearNewCustomerData: true,
+    ));
   }
 
   /// Clear selected customer
   void clearCustomer() {
     emit(state.copyWith(clearCustomer: true));
+  }
+
+  /// Ustaw jako zamówienie dla NOWEGO klienta
+  /// Dane klienta (NIP, nazwa, adres) wpisane w formularzu
+  /// Trafią do pola UWAGI zamówienia ZK w nexo
+  void setNewCustomer(String customerData) {
+    emit(state.copyWith(
+      isNewCustomer: true,
+      newCustomerData: customerData,
+      clearCustomer: true,  // Usuń wybranego klienta z bazy
+    ));
+  }
+  
+  /// Wyczyść dane nowego klienta
+  void clearNewCustomer() {
+    emit(state.copyWith(
+      isNewCustomer: false,
+      clearNewCustomerData: true,
+    ));
+  }
+  
+  /// Ustaw dodatkowe uwagi do zamówienia
+  void setOrderNotes(String notes) {
+    emit(state.copyWith(orderNotes: notes));
+  }
+  
+  /// Wyczyść uwagi
+  void clearOrderNotes() {
+    emit(state.copyWith(clearOrderNotes: true));
   }
 
   /// Clear entire cart

@@ -65,8 +65,8 @@ class CartScreen extends StatelessWidget {
 
           return Column(
             children: [
-              // Customer selection
-              _CustomerSelector(customer: state.selectedCustomer),
+              // Customer selection (istniejący lub nowy)
+              _CustomerSelector(state: state),
 
               // Cart items list
               Expanded(
@@ -115,61 +115,258 @@ class CartScreen extends StatelessWidget {
   }
 }
 
+/// Wybór klienta - istniejący z bazy LUB nowy (dane w uwagach)
+/// 
+/// LOGIKA (wymaganie klienta):
+/// - Handlowiec może wybrać klienta z bazy nexo
+/// - LUB zaznaczyć "Nowy klient" i wpisać NIP + dane
+/// - Dane nowego klienta trafiają do UWAG zamówienia
+/// - Biuro tworzy kartę kontrahenta w nexo przed przetworzeniem
 class _CustomerSelector extends StatelessWidget {
-  final dynamic customer;
+  final CartState state;
 
-  const _CustomerSelector({required this.customer});
+  const _CustomerSelector({required this.state});
 
   @override
   Widget build(BuildContext context) {
+    final hasCustomer = state.selectedCustomer != null || state.isNewCustomer;
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      color: customer == null ? Colors.orange[50] : Colors.green[50],
-      child: Row(
+      color: hasCustomer ? Colors.green[50] : Colors.orange[50],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            customer == null ? Icons.warning_amber : Icons.check_circle,
-            color: customer == null ? Colors.orange[700] : Colors.green[700],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  customer == null ? 'Wybierz klienta' : customer.name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: customer == null ? Colors.orange[900] : Colors.green[900],
-                  ),
-                ),
-                if (customer != null && customer.city != null)
-                  Text(
-                    customer.city!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
+          Row(
+            children: [
+              Icon(
+                hasCustomer ? Icons.check_circle : Icons.warning_amber,
+                color: hasCustomer ? Colors.green[700] : Colors.orange[700],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state.customerDisplayName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: hasCustomer ? Colors.green[900] : Colors.orange[900],
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                    if (state.selectedCustomer != null && state.selectedCustomer!.city != null)
+                      Text(
+                        state.selectedCustomer!.city!,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      ),
+                    // Wyświetl saldo klienta (rozrachunki)
+                    if (state.selectedCustomer != null && state.selectedCustomer!.balance != null)
+                      Text(
+                        'Saldo: ${state.selectedCustomer!.formattedBalance}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: state.selectedCustomer!.hasDebt ? Colors.red[700] : Colors.green[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Przycisk wyboru istniejącego klienta
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const CustomersListScreen(),
+                    ),
+                  );
+                },
+                icon: Icon(state.selectedCustomer == null ? Icons.person_search : Icons.edit),
+                label: Text(state.selectedCustomer == null ? 'Z bazy' : 'Zmień'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Przycisk "Nowy klient"
+              ElevatedButton.icon(
+                onPressed: () => _showNewCustomerDialog(context),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Nowy'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: state.isNewCustomer ? Colors.green[700] : Colors.orange[700],
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
-          ElevatedButton.icon(
+          
+          // Wyświetl dane nowego klienta jeśli wprowadzone
+          if (state.isNewCustomer && state.newCustomerData != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Dane nowego klienta (trafią do uwag ZK):',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.newCustomerData!,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showNewCustomerDialog(BuildContext context) {
+    final nipController = TextEditingController();
+    final nameController = TextEditingController();
+    final addressController = TextEditingController();
+    
+    // Jeśli już są dane nowego klienta, spróbuj je wczytać
+    if (state.newCustomerData != null) {
+      final lines = state.newCustomerData!.split('\n');
+      for (final line in lines) {
+        if (line.startsWith('NIP:')) {
+          nipController.text = line.replaceFirst('NIP:', '').trim();
+        } else if (line.startsWith('Nazwa:')) {
+          nameController.text = line.replaceFirst('Nazwa:', '').trim();
+        } else if (line.startsWith('Adres:')) {
+          addressController.text = line.replaceFirst('Adres:', '').trim();
+        }
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.person_add, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Nowy klient'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Wpisz dane klienta - trafią do uwag zamówienia.\n'
+                'Biuro utworzy kartę kontrahenta w nexo.',
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nipController,
+                decoration: const InputDecoration(
+                  labelText: 'NIP *',
+                  hintText: '1234567890',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.numbers),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nazwa firmy *',
+                  hintText: 'Firma XYZ Sp. z o.o.',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.business),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Adres',
+                  hintText: 'ul. Przykładowa 1, 00-001 Warszawa',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CustomersListScreen(),
+              // Anuluj i wyczyść dane nowego klienta
+              context.read<CartCubit>().clearNewCustomer();
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Anuluj'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final nip = nipController.text.trim();
+              final name = nameController.text.trim();
+              final address = addressController.text.trim();
+              
+              if (nip.isEmpty || name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('NIP i Nazwa firmy są wymagane!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              
+              // Zbuduj dane nowego klienta
+              final customerData = [
+                'NIP: $nip',
+                'Nazwa: $name',
+                if (address.isNotEmpty) 'Adres: $address',
+              ].join('\n');
+              
+              context.read<CartCubit>().setNewCustomer(customerData);
+              Navigator.of(dialogContext).pop();
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Dane nowego klienta zapisane'),
+                  backgroundColor: Colors.green,
                 ),
               );
             },
-            icon: Icon(customer == null ? Icons.add : Icons.edit),
-            label: Text(customer == null ? 'Wybierz' : 'Zmień'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: customer == null ? Colors.orange[700] : Colors.green[700],
+              backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
+            child: const Text('Zapisz'),
           ),
         ],
       ),
@@ -434,10 +631,10 @@ class _CartSummary extends StatelessWidget {
           ),
 
           // Info text when customer not selected
-          if (state.selectedCustomer == null && state.items.isNotEmpty) ...[
+          if (!state.canCheckout && state.items.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              'Wybierz klienta aby kontynuować',
+              'Wybierz klienta z bazy lub wpisz dane nowego klienta',
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.orange[700],
@@ -595,22 +792,36 @@ class _CartSummary extends StatelessWidget {
     );
 
     try {
+      // Przygotuj dane klienta
+      // Jeśli nowy klient: customerId = null, dane w notes
+      // Jeśli istniejący: customerId z bazy
+      final int? customerId = cart.isNewCustomer ? null : cart.selectedCustomer?.id;
+      final String? customerName = cart.isNewCustomer 
+          ? 'NOWY KLIENT' 
+          : cart.selectedCustomer?.name;
+      
+      // Uwagi: dane nowego klienta + ewentualne dodatkowe uwagi
+      final String? notes = cart.fullOrderNotes;
+      
       // Create order object
+      // CENY PÓŁKOWE - finalna kalkulacja rabatów w nexo PRO
       final order = Order(
-        customerId: cart.selectedCustomer!.id!,
+        customerId: customerId,
+        customerName: customerName,
         orderDate: DateTime.now(),
-        totalNetto: cart.totalNetto,
+        totalNetto: cart.totalNetto,  // Suma cen półkowych
         totalBrutto: cart.totalBrutto,
         status: 'pending',
+        notes: notes,  // Zawiera dane nowego klienta jeśli applicable
         items: cart.items
             .map((item) {
               final itemTotal = item.totalNetto;
               return OrderItem(
-                  productId: item.product.id!,
+                  productId: item.product.id,
                   productCode: item.product.code,
                   productName: item.product.name,
                   quantity: item.quantity.toDouble(),
-                  priceNetto: item.product.priceNetto,
+                  priceNetto: item.product.priceNetto,  // Cena półkowa
                   vatRate: item.product.vatRate ?? 23,
                   total: itemTotal,
                 );
@@ -626,7 +837,6 @@ class _CartSummary extends StatelessWidget {
         await ApiService().createOrder(order.toJson());
       } catch (e) {
         // API sync failed - order will be synced later in background
-        // ignore: avoid_print
         // Order saved locally, will sync when online
       }
 
@@ -638,11 +848,15 @@ class _CartSummary extends StatelessWidget {
         Navigator.of(context).pop();
 
         // Show success message
+        final message = cart.isNewCustomer 
+            ? 'Zamówienie utworzone dla NOWEGO KLIENTA!\nDane w uwagach - biuro utworzy kartę.'
+            : 'Zamówienie utworzone pomyślnie!';
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Zamówienie utworzone pomyślnie!'),
+          SnackBar(
+            content: Text(message),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
           ),
         );
 
