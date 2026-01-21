@@ -196,6 +196,33 @@ class DatabaseHelper {
     return result.map((json) => Product.fromDatabase(json)).toList();
   }
 
+  /// Wyszukaj produkt po kodzie EAN (dla skanera)
+  /// Wymaganie klienta: skanowanie kodów kreskowych
+  Future<Product?> getProductByEan(String ean) async {
+    final db = await database;
+    final result = await db.query(
+      'products',
+      where: 'active = ? AND ean = ?',
+      whereArgs: [1, ean],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return Product.fromDatabase(result.first);
+  }
+  
+  /// Wyszukaj produkt po kodzie produktu
+  Future<Product?> getProductByCode(String code) async {
+    final db = await database;
+    final result = await db.query(
+      'products',
+      where: 'active = ? AND code = ?',
+      whereArgs: [1, code],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return Product.fromDatabase(result.first);
+  }
+
   Future<int> deleteAllProducts() async {
     final db = await database;
     return await db.delete('products');

@@ -58,6 +58,9 @@ dependencies:
   # Background Tasks (workmanager temporarily disabled for Android 7.0 compatibility)
   # workmanager: ^0.5.2
   connectivity_plus: ^6.0.5
+  
+  # Barcode Scanner (wymaganie klienta - skanowanie EAN)
+  mobile_scanner: ^5.1.1
 
 dev_dependencies:
   flutter_test:

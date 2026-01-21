@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/products_bloc.dart';
+import '../../bloc/cart_cubit.dart';
 import '../../models/product.dart';
 import '../../database/database_helper.dart';
 import '../../services/api_service.dart';
 import 'product_detail_screen.dart';
+import 'barcode_scanner_screen.dart';
 
 class ProductsListScreen extends StatelessWidget {
   final bool autoFocusSearch;
@@ -48,6 +50,123 @@ class _ProductsListViewState extends State<ProductsListView> {
     super.dispose();
   }
 
+  /// Otwórz skaner kodów EAN i wyszukaj produkt
+  Future<void> _openBarcodeScanner(BuildContext context) async {
+    final scannedCode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => const BarcodeScannerScreen(),
+      ),
+    );
+    
+    if (scannedCode == null || !context.mounted) return;
+    
+    // Wyszukaj produkt po EAN w lokalnej bazie
+    final product = await DatabaseHelper.instance.getProductByEan(scannedCode);
+    
+    if (product != null && context.mounted) {
+      // Produkt znaleziony - otwórz szczegóły lub dodaj do koszyka
+      _showProductFoundDialog(context, product);
+    } else if (context.mounted) {
+      // Produkt nie znaleziony - wyszukaj w wyszukiwarce
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Nie znaleziono produktu z kodem: $scannedCode'),
+          backgroundColor: Colors.orange,
+          action: SnackBarAction(
+            label: 'Szukaj',
+            textColor: Colors.white,
+            onPressed: () {
+              // Wyszukaj po kodzie
+              setState(() {
+                _isSearching = true;
+                _searchController.text = scannedCode;
+              });
+              context.read<ProductsBloc>().add(SearchProducts(scannedCode));
+            },
+          ),
+        ),
+      );
+    }
+  }
+  
+  /// Dialog gdy produkt znaleziony przez skaner
+  void _showProductFoundDialog(BuildContext context, Product product) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Produkt znaleziony!')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              product.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Kod: ${product.code}'),
+            if (product.ean != null) Text('EAN: ${product.ean}'),
+            const SizedBox(height: 8),
+            Text(
+              '${product.priceNetto.toStringAsFixed(2)} zł netto',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Zamknij'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailScreen(product: product),
+                ),
+              );
+            },
+            icon: const Icon(Icons.info),
+            label: const Text('Szczegóły'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<CartCubit>().addProduct(product);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Dodano: ${product.name}'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add_shopping_cart),
+            label: const Text('Do koszyka'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,6 +187,13 @@ class _ProductsListViewState extends State<ProductsListView> {
               )
             : const Text('Produkty'),
         actions: [
+          // Przycisk skanera EAN (wymaganie klienta)
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: () => _openBarcodeScanner(context),
+            tooltip: 'Skanuj kod EAN',
+          ),
+          // Przycisk wyszukiwania
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: () {
