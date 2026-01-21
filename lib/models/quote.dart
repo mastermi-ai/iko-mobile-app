@@ -1,13 +1,17 @@
 import 'dart:convert';
 
-/// Single item in a quote
+/// Pozycja oferty
+/// 
+/// UWAGA: Pole `quantityExtra` (gratisy) zostało USUNIĘTE zgodnie z wymaganiami klienta.
+/// Ceny są "półkowe" (bazowe) - używane do komunikacji z klientem.
+/// Oferty w IKO to "lekka wersja" - PDF/email, nie formalny dokument w nexo.
 class QuoteItem {
   final String productCode;
   final String productName;
   final int productId;
   final double quantity;
-  final double? quantityExtra;
-  final double priceNetto;
+  // quantityExtra USUNIĘTE - gratisy wyłączone przez klienta
+  final double priceNetto;  // Cena półkowa (bazowa)
   final double? priceBrutto;
   final double? vatRate;
   final double? discount;
@@ -19,7 +23,6 @@ class QuoteItem {
     required this.productName,
     required this.productId,
     required this.quantity,
-    this.quantityExtra,
     required this.priceNetto,
     this.priceBrutto,
     this.vatRate,
@@ -34,8 +37,7 @@ class QuoteItem {
       'product_code': productCode,
       'product_name': productName,
       'quantity': quantity,
-      'quantity_extra': quantityExtra,
-      'price_netto': priceNetto,
+      'price_netto': priceNetto,  // Cena półkowa
       'price_brutto': priceBrutto,
       'vat_rate': vatRate,
       'discount': discount,
@@ -50,9 +52,6 @@ class QuoteItem {
       productCode: json['product_code'] as String,
       productName: json['product_name'] as String,
       quantity: (json['quantity'] as num).toDouble(),
-      quantityExtra: json['quantity_extra'] != null
-          ? (json['quantity_extra'] as num).toDouble()
-          : null,
       priceNetto: (json['price_netto'] as num).toDouble(),
       priceBrutto: json['price_brutto'] != null
           ? (json['price_brutto'] as num).toDouble()
