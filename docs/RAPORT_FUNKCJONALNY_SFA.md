@@ -383,52 +383,90 @@ VALUES ('nowy.handlowiec', 'hash', 'Nowy Handlowiec', 'NH', 1);
 
 ## 5. ⚠️ POTENCJALNE RYZYKA I PYTANIA DO KLIENTA
 
-### 5.1 Pytania wymagające wyjaśnienia
+### 5.1 Pytania i ODPOWIEDZI KLIENTA ✅
 
-> **UWAGA:** Stara aplikacja POSDI była zintegrowana z systemem WAPRO.
-> Klient obecnie używa **InsERT nexo PRO** - poniższe pytania zostały przetłumaczone na terminologię nexo.
+> **STATUS:** Odpowiedzi otrzymane od klienta. Wymagania potwierdzone.
+> **Wersja nexo PRO:** 58.0.2+ (najnowsza)
+> **Przyszły rozwój:** Moduł WMS (architektura musi być rozszerzalna)
 
-#### Cenniki i rabaty (nexo PRO)
+---
 
-| # | Pytanie | Wyjaśnienie |
-|---|---------|-------------|
-| Q01 | **Czy w nexo PRO używacie Grup Cenowych kontrahentów?** | W nexo można przypisać kontrahenta do grupy cenowej, która ma własne ceny. Czy tego używacie? |
-| Q02 | **Czy macie indywidualne cenniki dla wybranych klientów?** | Czy niektórzy klienci mają specjalne, indywidualne ceny (nie grupowe)? |
-| Q03 | **Czy używacie pola "Rabat" przy kontrahentach w nexo?** | Kontrahent w nexo może mieć przypisany stały rabat %. Czy to używane? |
-| Q04 | **Gdzie wprowadzacie promocje cenowe?** | Bezpośrednio w nexo PRO (cenniki promocyjne) czy w osobnym systemie? |
+#### 🏷️ A. Cenniki i Rabaty - KLUCZOWA ZMIANA!
 
-#### Produkty (nexo PRO)
+| # | Pytanie | ✅ ODPOWIEDŹ KLIENTA |
+|---|---------|---------------------|
+| Q01 | Grupy cenowe? | **TAK**, ale kalkulacja w nexo, nie w aplikacji |
+| Q02 | Indywidualne cenniki? | **TAK**, przez "Cenniki czasowe" (np. "Cennik Łukasz") |
+| Q03 | Rabaty przy kontrahentach? | **TAK**, ale **obliczane W NEXO** po synchronizacji |
+| Q04 | Gdzie promocje? | **W nexo PRO** - cenniki promocyjne czasowe |
 
-| # | Pytanie | Wyjaśnienie |
-|---|---------|-------------|
-| Q05 | **Czy handlowcy dają "gratisy" do zamówień?** | Np. przy zakupie 10 szt. klient dostaje 1 gratis. Czy to funkcja potrzebna? |
-| Q06 | **Czy produkty w nexo mają zdjęcia?** | Jeśli tak - skąd je pobieramy? Z nexo czy z osobnego serwera? |
-| Q07 | **Czy produkty mają wiele jednostek miary?** | Np. sprzedaż na sztuki i na kartony. Czy to używane? |
-| Q08 | **Czy skanujecie kody kreskowe EAN na tablecie?** | Czy handlowiec skanuje produkty skanerem/kamerą tabletu? |
+**📌 DECYZJA ARCHITEKTONICZNA:**
+```
+Aplikacja mobilna → pokazuje CENY PÓŁKOWE (bazowe)
+                  → NIE oblicza rabatów
+                  → wysyła ZK do nexo
 
-#### Klienci (nexo PRO)
+Nexo PRO         → przelicza ceny na podstawie kontrahenta
+                  → stosuje rabaty i cenniki czasowe
+                  → generuje finalną cenę
+```
 
-| # | Pytanie | Wyjaśnienie |
-|---|---------|-------------|
-| Q09 | **Czy handlowiec może dodać nowego klienta w terenie?** | Czy aplikacja ma mieć formularz dodawania nowego kontrahenta? |
-| Q10 | **Czy używacie "Płatników" w nexo?** | Czyli czy np. centrala sieci sklepów płaci za wszystkie oddziały? |
-| Q11 | **Czy handlowiec ma widzieć należności/saldo klienta?** | Informacja ile klient jest winien firmie (nieopłacone faktury). |
+**Wpływ:** UPROSZCZENIE aplikacji - usuwamy logikę kalkulacji rabatów z Flutter!
 
-#### Zamówienia (nexo PRO)
+---
 
-| # | Pytanie | Wyjaśnienie |
-|---|---------|-------------|
-| Q12 | **Jaki typ dokumentu ma powstać w nexo?** | Zamówienie od Klienta (ZK)? Faktura VAT (FV)? Wydanie Zewnętrzne (WZ)? |
-| Q13 | **Czy zamówienie można edytować po wysłaniu z tabletu?** | Czy handlowiec może zmienić zamówienie które już poszło do nexo? |
-| Q14 | **Czy potrzebna jest funkcja Ofert/Wycen?** | Generowanie oferty cenowej dla klienta (przed zamówieniem). |
+#### 📦 B. Produkty
 
-#### Integracja techniczna
+| # | Pytanie | ✅ ODPOWIEDŹ KLIENTA |
+|---|---------|---------------------|
+| Q05 | Gratisy? | **NIE** - funkcja wyłączona |
+| Q06 | Zdjęcia produktów? | **TAK**, z bazy nexo, ale **z cache'owaniem** (obawy o wydajność: "zmuli bazę") |
+| Q07 | Wiele jednostek miary? | *Nie określono* - zakładamy standardowe |
+| Q08 | Skanowanie EAN? | **TAK** - włączyć skanowanie kamerą/skanerem |
 
-| # | Pytanie | Wyjaśnienie |
-|---|---------|-------------|
-| Q15 | **Która wersja nexo PRO jest zainstalowana?** | Potrzebne do weryfikacji kompatybilności z API Sfera. |
-| Q16 | **Gdzie jest zainstalowany nexo PRO?** | Na dedykowanym serwerze w firmie? Na komputerze lokalnym? W chmurze InsERT? |
-| Q17 | **Czy są inne programy podłączone do nexo?** | Np. sklep internetowy, WMS, inne integracje - mogą wpływać na dane. |
+**📌 DECYZJA:**
+- Usunąć pole `quantity_extra` (gratisy)
+- Dodać endpoint `/products/thumbnail/:id` z cache'owaniem
+- Włączyć moduł skanera kodów kreskowych
+
+---
+
+#### 👥 C. Klienci
+
+| # | Pytanie | ✅ ODPOWIEDŹ KLIENTA |
+|---|---------|---------------------|
+| Q09 | Dodawanie nowych klientów? | **NIE przez API** - handlowiec wpisuje NIP i dane do **UWAG zamówienia**, biuro tworzy kartę klienta |
+| Q10 | Płatnicy (payer)? | **NIE** - standardowa relacja 1:1 |
+| Q11 | Rozrachunki/saldo? | **TAK** - pokazywać należności klienta |
+
+**📌 DECYZJA:**
+- Usunąć formularz "Dodaj klienta" z aplikacji
+- Dodać pole "Dane nowego klienta" w uwagach zamówienia
+- Dodać endpoint `/customers/:id/balance` - saldo należności
+
+---
+
+#### 🧾 D. Zamówienia
+
+| # | Pytanie | ✅ ODPOWIEDŹ KLIENTA |
+|---|---------|---------------------|
+| Q12 | Typ dokumentu? | **ZK** (Zamówienie od Klienta) → konwertowalne do FS (Faktura) |
+| Q13 | Edycja po wysłaniu? | **TAK** - edycja lokalna przed synchronizacją |
+| Q14 | Oferty? | **TAK, wersja LEKKA** - PDF/email do klienta, NIE formalny dokument w nexo |
+
+**📌 DECYZJA:**
+- Dokument: `TypDokumentuHandlowego.ZamowienieOdKlienta`
+- Oferty: prosty generator PDF + wysyłka email (bez zapisu w nexo)
+
+---
+
+#### 🔧 E. Integracja techniczna
+
+| # | Pytanie | ✅ ODPOWIEDŹ KLIENTA |
+|---|---------|---------------------|
+| Q15 | Wersja nexo PRO? | **58.0.2+** (najnowsza) |
+| Q16 | Gdzie zainstalowany? | *Do potwierdzenia* - wpływa na architekturę Bridge |
+| Q17 | Inne integracje? | **Planowany WMS** - architektura musi być rozszerzalna |
 
 ### 5.2 Zidentyfikowane ryzyka techniczne
 
@@ -454,8 +492,8 @@ VALUES ('nowy.handlowiec', 'hash', 'Nowy Handlowiec', 'NH', 1);
 
 ### 6.1 Endpointy API starej aplikacji POSDI (z reverse engineering)
 
-> ⚠️ **UWAGA:** Poniższe endpointy pochodzą ze **STAREJ aplikacji POSDI**.  
-> Serwer `api.posdi.com` należał do firmy HIVEDI i **już nie działa**.  
+> ⚠️ **UWAGA:** Poniższe endpointy pochodzą ze **STAREJ aplikacji POSDI**.
+> Serwer `api.posdi.com` należał do firmy HIVEDI i **już nie działa**.
 > Nowa aplikacja **IKO** używa własnego **Cloud API** (NestJS).
 
 ```
