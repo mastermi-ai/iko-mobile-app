@@ -1,3 +1,16 @@
+/// Produkt (Towar) z nexo PRO
+///
+/// LOGIKA CEN (wymaganie klienta):
+/// - `priceNetto` = CENA PÓŁKOWA (bazowa) wyświetlana handlowcowi
+/// - Finalna kalkulacja rabatów następuje W NEXO po synchronizacji zamówienia
+/// - Aplikacja NIE oblicza cen końcowych - tylko pokazuje cennik bazowy
+///
+/// ZDJĘCIA (wymaganie klienta - wydajność!):
+/// - `thumbnailBase64` = cache zdjęcia jako Base64 (max 200x200px)
+/// - Zdjęcia pobierane z nexo i cache'owane w Cloud API
+///
+/// SKANER EAN (wymaganie klienta):
+/// - `ean` = kod kreskowy do skanowania kamerą/skanerem tabletu
 class Product {
   final int id;
   final int clientId;
@@ -6,13 +19,21 @@ class Product {
   final String name;
   final String? description;
   final String? imageUrl;
+  /// Cena półkowa (bazowa) - rabaty obliczane w nexo!
   final double priceNetto;
   final double? priceBrutto;
   final double? vatRate;
   final String unit;
+  /// Kod kreskowy EAN do skanowania
   final String? ean;
   final bool active;
   final DateTime? syncedAt;
+
+  // ZDJĘCIA - cache z nexo (wymaganie klienta: wydajność!)
+  /// Zdjęcie jako Base64 thumbnail (max 200x200px)
+  final String? thumbnailBase64;
+  /// Data pobrania zdjęcia z nexo
+  final DateTime? thumbnailSyncedAt;
 
   Product({
     required this.id,
@@ -29,7 +50,17 @@ class Product {
     this.ean,
     this.active = true,
     this.syncedAt,
+    this.thumbnailBase64,
+    this.thumbnailSyncedAt,
   });
+
+  /// Czy produkt ma zdjęcie (URL lub Base64)
+  bool get hasImage =>
+      (imageUrl != null && imageUrl!.isNotEmpty) ||
+      (thumbnailBase64 != null && thumbnailBase64!.isNotEmpty);
+
+  /// Czy produkt ma kod EAN do skanowania
+  bool get hasEan => ean != null && ean!.isNotEmpty;
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
@@ -53,6 +84,11 @@ class Product {
       syncedAt: json['syncedAt'] != null 
           ? DateTime.parse(json['syncedAt'] as String) 
           : null,
+      // Zdjęcia z cache
+      thumbnailBase64: json['thumbnailBase64'] as String?,
+      thumbnailSyncedAt: json['thumbnailSyncedAt'] != null 
+          ? DateTime.parse(json['thumbnailSyncedAt'] as String) 
+          : null,
     );
   }
 
@@ -72,6 +108,8 @@ class Product {
       'ean': ean,
       'active': active,
       'syncedAt': syncedAt?.toIso8601String(),
+      'thumbnailBase64': thumbnailBase64,
+      'thumbnailSyncedAt': thumbnailSyncedAt?.toIso8601String(),
     };
   }
 
@@ -91,6 +129,8 @@ class Product {
       'ean': ean,
       'active': active ? 1 : 0,
       'synced_at': syncedAt?.toIso8601String(),
+      'thumbnail_base64': thumbnailBase64,
+      'thumbnail_synced_at': thumbnailSyncedAt?.toIso8601String(),
     };
   }
 
@@ -111,6 +151,10 @@ class Product {
       active: map['active'] == 1,
       syncedAt: map['synced_at'] != null 
           ? DateTime.parse(map['synced_at'] as String) 
+          : null,
+      thumbnailBase64: map['thumbnail_base64'] as String?,
+      thumbnailSyncedAt: map['thumbnail_synced_at'] != null 
+          ? DateTime.parse(map['thumbnail_synced_at'] as String) 
           : null,
     );
   }
