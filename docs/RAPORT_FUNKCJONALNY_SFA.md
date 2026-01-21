@@ -105,7 +105,7 @@
 
 #### 👤 KLIENT (customers)
 
-> **UWAGA:** Pola z prefiksem `_wapro_` pochodzą ze starej aplikacji POSDI (integracja z WAPRO).  
+> **UWAGA:** Pola z prefiksem `_wapro_` pochodzą ze starej aplikacji POSDI (integracja z WAPRO).
 > W nowej aplikacji IKO mapujemy je na odpowiedniki w **InsERT nexo PRO**.
 
 | Pole w starej aplikacji | Opis | Mapowanie na nexo PRO |
@@ -385,7 +385,7 @@ VALUES ('nowy.handlowiec', 'hash', 'Nowy Handlowiec', 'NH', 1);
 
 ### 5.1 Pytania wymagające wyjaśnienia
 
-> **UWAGA:** Stara aplikacja POSDI była zintegrowana z systemem WAPRO.  
+> **UWAGA:** Stara aplikacja POSDI była zintegrowana z systemem WAPRO.
 > Klient obecnie używa **InsERT nexo PRO** - poniższe pytania zostały przetłumaczone na terminologię nexo.
 
 #### Cenniki i rabaty (nexo PRO)
@@ -452,10 +452,15 @@ VALUES ('nowy.handlowiec', 'hash', 'Nowy Handlowiec', 'NH', 1);
 
 ## 6. 📎 ZAŁĄCZNIKI
 
-### 6.1 Endpointy API (z reverse engineering)
+### 6.1 Endpointy API starej aplikacji POSDI (z reverse engineering)
+
+> ⚠️ **UWAGA:** Poniższe endpointy pochodzą ze **STAREJ aplikacji POSDI**.  
+> Serwer `api.posdi.com` należał do firmy HIVEDI i **już nie działa**.  
+> Nowa aplikacja **IKO** używa własnego **Cloud API** (NestJS).
 
 ```
-Base URL: https://api.posdi.com/
+[STARY SYSTEM - NIE UŻYWAĆ]
+Base URL: https://api.posdi.com/   ← NIEAKTYWNY!
 
 Autoryzacja:
   POST /api_android/login              - logowanie
@@ -471,6 +476,34 @@ Kontakty/CRM:
 
 System:
   GET  /api_android/update_app         - sprawdzenie aktualizacji
+```
+
+### 6.2 Endpointy nowego API IKO (Cloud API)
+
+```
+[NOWY SYSTEM - IKO]
+Base URL: https://twoj-serwer.pl/  lub localhost:3000 (dev)
+
+Autoryzacja:
+  POST /auth/login                     - logowanie (JWT)
+
+Synchronizacja:
+  GET  /sync/products                  - pobieranie produktów
+  GET  /sync/customers                 - pobieranie klientów
+
+Zamówienia:
+  POST /orders                         - tworzenie zamówienia
+  GET  /orders                         - lista zamówień
+
+Oferty:
+  POST /quotes                         - tworzenie oferty
+  GET  /quotes                         - lista ofert
+
+Bridge (dla Nexo Bridge):
+  GET  /bridge/pending-orders          - zamówienia do przetworzenia
+  PATCH /bridge/orders/:id             - aktualizacja statusu
+  PUT  /bridge/products                - sync produktów z nexo
+  PUT  /bridge/customers               - sync klientów z nexo
 ```
 
 ### 6.2 Tabele SQLite (lokalna baza)
