@@ -608,15 +608,32 @@ Na podstawie powyższej analizy starej aplikacji POSDI **została zbudowana nowa
 | Dashboard 6 kafelków | ✅ | Identyczny układ |
 | Logo IKO | ✅ | Nowe logo klienta |
 | Lista produktów | ✅ | Z wyszukiwaniem |
-| Lista klientów | ✅ | Z szczegółami |
-| Koszyk | ✅ | Pełna funkcjonalność |
+| Lista klientów | ✅ | Z szczegółami + rozrachunki |
+| Koszyk | ✅ | Pełna funkcjonalność + nowy klient |
 | Zamówienia | ✅ | Tworzenie + historia |
-| Oferty | ✅ | Tworzenie + konwersja |
+| Oferty | ✅ | Tworzenie lekkie (PDF/email) |
 | Schowki | ✅ | Zapisywanie koszyków |
 | Sync offline | ✅ | SQLite + batch sync |
-| Skaner kodów | ⏳ | Do dodania w P2 |
+| **Skaner kodów EAN** | ✅ | Kamera tabletu + ręczne wpisywanie |
+| Zdjęcia produktów | ✅ | Cache z nexo (thumbnail) |
+| Rozrachunki klientów | ✅ | Saldo należności |
+| Nowy klient (NIP) | ✅ | Dane w uwagach ZK |
 | GPS/Trasówka | ❌ | Poza zakresem |
 | Raporty/Ankiety | ❌ | Poza zakresem |
+| Gratisy | ❌ | Wyłączone przez klienta |
+
+### 7.3 Zmiany na podstawie odpowiedzi klienta (2026-01)
+
+| Zmiana | Implementacja |
+|--------|---------------|
+| **Ceny półkowe** | Aplikacja pokazuje ceny bazowe, rabaty w nexo |
+| **Gratisy wyłączone** | Usunięto pole `quantityExtra` |
+| **Skaner EAN włączony** | `mobile_scanner` + `getProductByEan()` |
+| **Zdjęcia z cache** | `thumbnailBase64` w modelu Product |
+| **Nowy klient w uwagach** | `isNewCustomer` + `newCustomerData` w Cart |
+| **Rozrachunki włączone** | `balance`, `creditLimit` w Customer |
+| **Oferty lekkie** | PDF/email, nie formalny dokument nexo |
+| **Typ dokumentu ZK** | Zamówienie od Klienta → konwersja do FS |
 
 ### 7.3 Różnice między POSDI a IKO
 
