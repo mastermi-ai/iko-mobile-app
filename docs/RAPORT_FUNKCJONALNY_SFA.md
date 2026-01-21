@@ -105,18 +105,21 @@
 
 #### 👤 KLIENT (customers)
 
-| Pole w API | Opis | Mapowanie na nexo PRO |
-|------------|------|----------------------|
+> **UWAGA:** Pola z prefiksem `_wapro_` pochodzą ze starej aplikacji POSDI (integracja z WAPRO).  
+> W nowej aplikacji IKO mapujemy je na odpowiedniki w **InsERT nexo PRO**.
+
+| Pole w starej aplikacji | Opis | Mapowanie na nexo PRO |
+|------------------------|------|----------------------|
 | `customers_id` | Unikalny identyfikator | `Kontrahent.Id` |
-| `local_id` | ID lokalne (offline) | Wewnętrzne |
+| `local_id` | ID lokalne (offline) | Wewnętrzne (IKO) |
 | `customers_company_name` | Pełna nazwa firmy | `Kontrahent.Nazwa` |
 | `customers_company_shortname` | Nazwa skrócona | `Kontrahent.NazwaSkrocona` |
 | `customers_contact_email1` | Email kontaktowy | `Kontrahent.Email` |
-| `customers_discount1` | Rabat stały 1 | `Kontrahent.Rabat` (?) |
-| `customers_discount2` | Rabat stały 2 | Atrybut własny |
-| `customers_wapro_groups_id` | Grupa cenowa | `Kontrahent.GrupaCenowa.Id` |
-| `customers_wapro_prices_id` | Cennik indywidualny | Cennik własny |
-| `customers_wapro_payer_id` | Płatnik nadrzędny | `Kontrahent.Platnik.Id` |
+| `customers_discount1` | Rabat stały 1 | `Kontrahent.Rabat` ⚠️ *do weryfikacji* |
+| `customers_discount2` | Rabat stały 2 | ⚠️ *może nie istnieć w nexo* |
+| `customers_wapro_groups_id` | Grupa cenowa (WAPRO) | `Kontrahent.GrupaCenowa.Id` (nexo) |
+| `customers_wapro_prices_id` | Cennik indywidualny (WAPRO) | Cennik własny kontrahenta (nexo) |
+| `customers_wapro_payer_id` | Płatnik nadrzędny (WAPRO) | `Kontrahent.Platnik.Id` (nexo) |
 | `customers_nip` | NIP | `Kontrahent.NIP` |
 | `customers_regon` | REGON | `Kontrahent.REGON` |
 | `customers_city` | Miasto | `Kontrahent.Adres.Miejscowosc` |
@@ -382,47 +385,50 @@ VALUES ('nowy.handlowiec', 'hash', 'Nowy Handlowiec', 'NH', 1);
 
 ### 5.1 Pytania wymagające wyjaśnienia
 
-#### Cenniki i rabaty
+> **UWAGA:** Stara aplikacja POSDI była zintegrowana z systemem WAPRO.  
+> Klient obecnie używa **InsERT nexo PRO** - poniższe pytania zostały przetłumaczone na terminologię nexo.
 
-| # | Pytanie | Kontekst z API |
-|---|---------|----------------|
-| Q01 | **Czy używacie grupy cenowych w nexo?** | W API widzę `customers_wapro_groups_id` i `prices_groups` - sugeruje to grupy cenowe. |
-| Q02 | **Czy używacie indywidualnych cen dla klientów?** | Tabela `prices_customers` sugeruje cenniki per klient. |
-| Q03 | **Jak działa rabat discount1 vs discount2?** | Widzę dwa pola rabatowe - czy oba są używane? Jaki jest ich sens? |
-| Q04 | **Czy promocje są wprowadzane w nexo czy w osobnym systemie?** | Pola `products_promo_*` sugerują osobny mechanizm promocji. |
+#### Cenniki i rabaty (nexo PRO)
 
-#### Produkty
+| # | Pytanie | Wyjaśnienie |
+|---|---------|-------------|
+| Q01 | **Czy w nexo PRO używacie Grup Cenowych kontrahentów?** | W nexo można przypisać kontrahenta do grupy cenowej, która ma własne ceny. Czy tego używacie? |
+| Q02 | **Czy macie indywidualne cenniki dla wybranych klientów?** | Czy niektórzy klienci mają specjalne, indywidualne ceny (nie grupowe)? |
+| Q03 | **Czy używacie pola "Rabat" przy kontrahentach w nexo?** | Kontrahent w nexo może mieć przypisany stały rabat %. Czy to używane? |
+| Q04 | **Gdzie wprowadzacie promocje cenowe?** | Bezpośrednio w nexo PRO (cenniki promocyjne) czy w osobnym systemie? |
 
-| # | Pytanie | Kontekst z API |
-|---|---------|----------------|
-| Q05 | **Czy pole "Gratis" (ilość dodatkowa) jest używane?** | `cart_quantity_extra` - czy klient daje gratisy do zamówień? |
-| Q06 | **Skąd pochodzą zdjęcia produktów?** | `products_image_url` - osobny serwer plików? |
-| Q07 | **Czy produkt może mieć wiele jednostek miary?** | W API widzę tylko `products_unit` |
-| Q08 | **Czy wymagany jest kod kreskowy EAN?** | Obecny w API, ale czy używany w procesie? |
+#### Produkty (nexo PRO)
 
-#### Klienci
+| # | Pytanie | Wyjaśnienie |
+|---|---------|-------------|
+| Q05 | **Czy handlowcy dają "gratisy" do zamówień?** | Np. przy zakupie 10 szt. klient dostaje 1 gratis. Czy to funkcja potrzebna? |
+| Q06 | **Czy produkty w nexo mają zdjęcia?** | Jeśli tak - skąd je pobieramy? Z nexo czy z osobnego serwera? |
+| Q07 | **Czy produkty mają wiele jednostek miary?** | Np. sprzedaż na sztuki i na kartony. Czy to używane? |
+| Q08 | **Czy skanujecie kody kreskowe EAN na tablecie?** | Czy handlowiec skanuje produkty skanerem/kamerą tabletu? |
 
-| # | Pytanie | Kontekst z API |
-|---|---------|----------------|
-| Q09 | **Czy handlowiec może dodać nowego klienta w terenie?** | W starym API była taka opcja - czy potrzebna? |
-| Q10 | **Czy klient ma przypisanego płatnika (payer_id)?** | `customers_wapro_payer_id` - np. centrala płaci za oddziały? |
-| Q11 | **Czy handlowiec widzi należności klienta?** | W UI były "Rozliczenia klienta" i "Rozliczenia płatnika" |
+#### Klienci (nexo PRO)
 
-#### Zamówienia
+| # | Pytanie | Wyjaśnienie |
+|---|---------|-------------|
+| Q09 | **Czy handlowiec może dodać nowego klienta w terenie?** | Czy aplikacja ma mieć formularz dodawania nowego kontrahenta? |
+| Q10 | **Czy używacie "Płatników" w nexo?** | Czyli czy np. centrala sieci sklepów płaci za wszystkie oddziały? |
+| Q11 | **Czy handlowiec ma widzieć należności/saldo klienta?** | Informacja ile klient jest winien firmie (nieopłacone faktury). |
 
-| # | Pytanie | Kontekst z API |
-|---|---------|----------------|
-| Q12 | **Jaki typ dokumentu tworzony w nexo?** | ZK (Zamówienie od Klienta)? FV? WZ? |
-| Q13 | **Czy zamówienie może być edytowane po wysłaniu?** | W starym API był tylko status Nowe/Wysłane |
-| Q14 | **Czy potrzebna jest funkcja Ofert (generowanie PDF)?** | Osobny moduł w starym API |
+#### Zamówienia (nexo PRO)
 
-#### Integracja
+| # | Pytanie | Wyjaśnienie |
+|---|---------|-------------|
+| Q12 | **Jaki typ dokumentu ma powstać w nexo?** | Zamówienie od Klienta (ZK)? Faktura VAT (FV)? Wydanie Zewnętrzne (WZ)? |
+| Q13 | **Czy zamówienie można edytować po wysłaniu z tabletu?** | Czy handlowiec może zmienić zamówienie które już poszło do nexo? |
+| Q14 | **Czy potrzebna jest funkcja Ofert/Wycen?** | Generowanie oferty cenowej dla klienta (przed zamówieniem). |
 
-| # | Pytanie | Kontekst z API |
-|---|---------|----------------|
-| Q15 | **Która wersja nexo PRO?** | Wpływa na dostępność API Sfera |
-| Q16 | **Czy nexo jest na dedykowanym serwerze czy lokalnie?** | Wpływa na architekturę Bridge |
-| Q17 | **Czy są inne integracje z nexo (np. WMS, e-commerce)?** | Możliwe konflikty |
+#### Integracja techniczna
+
+| # | Pytanie | Wyjaśnienie |
+|---|---------|-------------|
+| Q15 | **Która wersja nexo PRO jest zainstalowana?** | Potrzebne do weryfikacji kompatybilności z API Sfera. |
+| Q16 | **Gdzie jest zainstalowany nexo PRO?** | Na dedykowanym serwerze w firmie? Na komputerze lokalnym? W chmurze InsERT? |
+| Q17 | **Czy są inne programy podłączone do nexo?** | Np. sklep internetowy, WMS, inne integracje - mogą wpływać na dane. |
 
 ### 5.2 Zidentyfikowane ryzyka techniczne
 
@@ -562,8 +568,8 @@ Na podstawie powyższej analizy starej aplikacji POSDI **została zbudowana nowa
 
 ---
 
-**Autor raportu:** Analityk Systemowy / AI Assistant  
-**Data:** Styczeń 2026  
+**Autor raportu:** Analityk Systemowy / AI Assistant
+**Data:** Styczeń 2026
 **Status:** ✅ Analiza zakończona, implementacja zrealizowana
 
 ---
