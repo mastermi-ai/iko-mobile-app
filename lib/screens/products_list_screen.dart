@@ -57,12 +57,12 @@ class _ProductsListViewState extends State<ProductsListView> {
         builder: (context) => const BarcodeScannerScreen(),
       ),
     );
-    
+
     if (scannedCode == null || !context.mounted) return;
-    
+
     // Wyszukaj produkt po EAN w lokalnej bazie
     final product = await DatabaseHelper.instance.getProductByEan(scannedCode);
-    
+
     if (product != null && context.mounted) {
       // Produkt znaleziony - otwórz szczegóły lub dodaj do koszyka
       _showProductFoundDialog(context, product);
@@ -88,7 +88,7 @@ class _ProductsListViewState extends State<ProductsListView> {
       );
     }
   }
-  
+
   /// Dialog gdy produkt znaleziony przez skaner
   void _showProductFoundDialog(BuildContext context, Product product) {
     showDialog(

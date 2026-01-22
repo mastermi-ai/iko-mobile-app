@@ -5,7 +5,7 @@ import '../models/product.dart';
 import '../models/customer.dart';
 
 /// Cart state holding items and selected customer
-/// 
+///
 /// LOGIKA NOWYCH KLIENTÓW (wymaganie klienta):
 /// - Jeśli `isNewCustomer` == true → zamówienie dla NOWEGO klienta
 /// - `newCustomerData` zawiera NIP, nazwę, adres (wpisywane w uwagi ZK)
@@ -13,7 +13,7 @@ import '../models/customer.dart';
 class CartState extends Equatable {
   final List<CartItem> items;
   final Customer? selectedCustomer;
-  
+
   /// Czy zamówienie jest dla nowego klienta (nie z bazy)
   final bool isNewCustomer;
   /// Dane nowego klienta: "NIP: xxx, Nazwa: xxx, Adres: xxx"
@@ -45,39 +45,39 @@ class CartState extends Equatable {
   /// 2. LUB nowego klienta (z wypełnionymi danymi NIP/nazwa)
   bool get canCheckout {
     if (items.isEmpty) return false;
-    
+
     // Istniejący klient wybrany
     if (selectedCustomer != null) return true;
-    
+
     // Nowy klient - musi mieć wypełnione dane
     if (isNewCustomer && newCustomerData != null && newCustomerData!.trim().isNotEmpty) {
       return true;
     }
-    
+
     return false;
   }
-  
+
   /// Nazwa klienta do wyświetlenia
   String get customerDisplayName {
     if (selectedCustomer != null) return selectedCustomer!.name;
     if (isNewCustomer) return 'NOWY KLIENT';
     return 'Nie wybrano';
   }
-  
+
   /// Pełne uwagi do zamówienia (łącznie z danymi nowego klienta)
   String? get fullOrderNotes {
     final parts = <String>[];
-    
+
     // Dane nowego klienta jako pierwsza część uwag
     if (isNewCustomer && newCustomerData != null && newCustomerData!.isNotEmpty) {
       parts.add('[NOWY KLIENT]\n$newCustomerData');
     }
-    
+
     // Dodatkowe uwagi
     if (orderNotes != null && orderNotes!.isNotEmpty) {
       parts.add(orderNotes!);
     }
-    
+
     return parts.isEmpty ? null : parts.join('\n\n');
   }
 
@@ -172,7 +172,7 @@ class CartCubit extends Cubit<CartState> {
       clearCustomer: true,  // Usuń wybranego klienta z bazy
     ));
   }
-  
+
   /// Wyczyść dane nowego klienta
   void clearNewCustomer() {
     emit(state.copyWith(
@@ -180,12 +180,12 @@ class CartCubit extends Cubit<CartState> {
       clearNewCustomerData: true,
     ));
   }
-  
+
   /// Ustaw dodatkowe uwagi do zamówienia
   void setOrderNotes(String notes) {
     emit(state.copyWith(orderNotes: notes));
   }
-  
+
   /// Wyczyść uwagi
   void clearOrderNotes() {
     emit(state.copyWith(clearOrderNotes: true));

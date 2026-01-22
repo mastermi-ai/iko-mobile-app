@@ -321,7 +321,7 @@ class _QuoteDetailView extends StatelessWidget {
         productCode: qi.productCode,
         productName: qi.productName,
         quantity: qi.quantity,
-        quantityExtra: qi.quantityExtra,
+        // quantityExtra USUNIĘTE - gratisy wyłączone przez klienta
         priceNetto: qi.priceNetto,
         priceBrutto: qi.priceBrutto,
         vatRate: qi.vatRate,

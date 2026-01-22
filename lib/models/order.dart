@@ -1,5 +1,5 @@
 /// Pozycja zamówienia
-/// 
+///
 /// UWAGA: Pole `quantityExtra` (gratisy) zostało USUNIĘTE zgodnie z wymaganiami klienta.
 /// Ceny są "półkowe" (bazowe) - finalna kalkulacja rabatów następuje w nexo PRO.
 class OrderItem {
@@ -46,12 +46,12 @@ class OrderItem {
 }
 
 /// Zamówienie od Klienta (ZK w nexo PRO)
-/// 
+///
 /// LOGIKA NOWYCH KLIENTÓW:
 /// - Jeśli `customerId` == null → zamówienie dla NOWEGO klienta
 /// - Dane nowego klienta (NIP, nazwa, adres) wpisywane w polu `notes`
 /// - Biuro tworzy kartę kontrahenta w nexo przed przetworzeniem ZK
-/// 
+///
 /// LOGIKA CEN:
 /// - `totalNetto` = suma cen PÓŁKOWYCH (bazowych)
 /// - Finalna kalkulacja rabatów następuje W NEXO po synchronizacji

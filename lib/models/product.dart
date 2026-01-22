@@ -72,22 +72,22 @@ class Product {
       description: json['description'] as String?,
       imageUrl: json['imageUrl'] as String?,
       priceNetto: (json['priceNetto'] as num).toDouble(),
-      priceBrutto: json['priceBrutto'] != null 
-          ? (json['priceBrutto'] as num).toDouble() 
+      priceBrutto: json['priceBrutto'] != null
+          ? (json['priceBrutto'] as num).toDouble()
           : null,
-      vatRate: json['vatRate'] != null 
-          ? (json['vatRate'] as num).toDouble() 
+      vatRate: json['vatRate'] != null
+          ? (json['vatRate'] as num).toDouble()
           : null,
       unit: json['unit'] as String? ?? 'szt',
       ean: json['ean'] as String?,
       active: json['active'] as bool? ?? true,
-      syncedAt: json['syncedAt'] != null 
-          ? DateTime.parse(json['syncedAt'] as String) 
+      syncedAt: json['syncedAt'] != null
+          ? DateTime.parse(json['syncedAt'] as String)
           : null,
       // Zdjęcia z cache
       thumbnailBase64: json['thumbnailBase64'] as String?,
-      thumbnailSyncedAt: json['thumbnailSyncedAt'] != null 
-          ? DateTime.parse(json['thumbnailSyncedAt'] as String) 
+      thumbnailSyncedAt: json['thumbnailSyncedAt'] != null
+          ? DateTime.parse(json['thumbnailSyncedAt'] as String)
           : null,
     );
   }
@@ -149,12 +149,12 @@ class Product {
       unit: map['unit'] as String,
       ean: map['ean'] as String?,
       active: map['active'] == 1,
-      syncedAt: map['synced_at'] != null 
-          ? DateTime.parse(map['synced_at'] as String) 
+      syncedAt: map['synced_at'] != null
+          ? DateTime.parse(map['synced_at'] as String)
           : null,
       thumbnailBase64: map['thumbnail_base64'] as String?,
-      thumbnailSyncedAt: map['thumbnail_synced_at'] != null 
-          ? DateTime.parse(map['thumbnail_synced_at'] as String) 
+      thumbnailSyncedAt: map['thumbnail_synced_at'] != null
+          ? DateTime.parse(map['thumbnail_synced_at'] as String)
           : null,
     );
   }

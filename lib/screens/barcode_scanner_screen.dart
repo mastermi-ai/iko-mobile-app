@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 /// Ekran skanera kodów kreskowych EAN
-/// 
+///
 /// WYMAGANIE KLIENTA:
 /// - Skanowanie EAN włączone
 /// - Dodawanie produktów do koszyka przez skan kodu
@@ -33,20 +33,20 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   void _onDetect(BarcodeCapture capture) {
     if (!_isScanning || _isProcessing) return;
-    
+
     final barcode = capture.barcodes.firstOrNull;
     if (barcode == null || barcode.rawValue == null) return;
-    
+
     final code = barcode.rawValue!;
-    
+
     // Ignoruj powtórzenia tego samego kodu
     if (code == _lastScannedCode) return;
-    
+
     setState(() {
       _lastScannedCode = code;
       _isProcessing = true;
     });
-    
+
     // Zwróć zeskanowany kod do poprzedniego ekranu
     Navigator.of(context).pop(code);
   }
@@ -65,8 +65,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
               valueListenable: _controller,
               builder: (context, state, child) {
                 return Icon(
-                  state.torchState == TorchState.on 
-                      ? Icons.flash_on 
+                  state.torchState == TorchState.on
+                      ? Icons.flash_on
                       : Icons.flash_off,
                 );
               },
@@ -89,7 +89,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             controller: _controller,
             onDetect: _onDetect,
           ),
-          
+
           // Ramka skanowania
           Center(
             child: Container(
@@ -112,8 +112,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _isProcessing 
-                        ? 'Znaleziono!' 
+                    _isProcessing
+                        ? 'Znaleziono!'
                         : 'Skieruj na kod kreskowy',
                     style: const TextStyle(
                       color: Colors.white,
@@ -125,7 +125,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
               ),
             ),
           ),
-          
+
           // Instrukcja na dole
           Positioned(
             bottom: 40,
@@ -160,7 +160,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12, 
+                        horizontal: 12,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
@@ -182,7 +182,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
               ),
             ),
           ),
-          
+
           // Przycisk ręcznego wprowadzenia kodu
           Positioned(
             bottom: 180,
@@ -206,7 +206,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   void _showManualEntryDialog(BuildContext context) {
     final controller = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(

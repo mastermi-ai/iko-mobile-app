@@ -209,7 +209,7 @@ class DatabaseHelper {
     if (result.isEmpty) return null;
     return Product.fromDatabase(result.first);
   }
-  
+
   /// Wyszukaj produkt po kodzie produktu
   Future<Product?> getProductByCode(String code) async {
     final db = await database;

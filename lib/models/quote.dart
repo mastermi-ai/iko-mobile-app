@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// Pozycja oferty
-/// 
+///
 /// UWAGA: Pole `quantityExtra` (gratisy) zostało USUNIĘTE zgodnie z wymaganiami klienta.
 /// Ceny są "półkowe" (bazowe) - używane do komunikacji z klientem.
 /// Oferty w IKO to "lekka wersja" - PDF/email, nie formalny dokument w nexo.

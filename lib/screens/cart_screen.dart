@@ -116,7 +116,7 @@ class CartScreen extends StatelessWidget {
 }
 
 /// Wybór klienta - istniejący z bazy LUB nowy (dane w uwagach)
-/// 
+///
 /// LOGIKA (wymaganie klienta):
 /// - Handlowiec może wybrać klienta z bazy nexo
 /// - LUB zaznaczyć "Nowy klient" i wpisać NIP + dane
@@ -130,7 +130,7 @@ class _CustomerSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasCustomer = state.selectedCustomer != null || state.isNewCustomer;
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -204,7 +204,7 @@ class _CustomerSelector extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Wyświetl dane nowego klienta jeśli wprowadzone
           if (state.isNewCustomer && state.newCustomerData != null) ...[
             const SizedBox(height: 12),
@@ -250,7 +250,7 @@ class _CustomerSelector extends StatelessWidget {
     final nipController = TextEditingController();
     final nameController = TextEditingController();
     final addressController = TextEditingController();
-    
+
     // Jeśli już są dane nowego klienta, spróbuj je wczytać
     if (state.newCustomerData != null) {
       final lines = state.newCustomerData!.split('\n');
@@ -334,7 +334,7 @@ class _CustomerSelector extends StatelessWidget {
               final nip = nipController.text.trim();
               final name = nameController.text.trim();
               final address = addressController.text.trim();
-              
+
               if (nip.isEmpty || name.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -344,17 +344,17 @@ class _CustomerSelector extends StatelessWidget {
                 );
                 return;
               }
-              
+
               // Zbuduj dane nowego klienta
               final customerData = [
                 'NIP: $nip',
                 'Nazwa: $name',
                 if (address.isNotEmpty) 'Adres: $address',
               ].join('\n');
-              
+
               context.read<CartCubit>().setNewCustomer(customerData);
               Navigator.of(dialogContext).pop();
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Dane nowego klienta zapisane'),
@@ -796,13 +796,13 @@ class _CartSummary extends StatelessWidget {
       // Jeśli nowy klient: customerId = null, dane w notes
       // Jeśli istniejący: customerId z bazy
       final int? customerId = cart.isNewCustomer ? null : cart.selectedCustomer?.id;
-      final String? customerName = cart.isNewCustomer 
-          ? 'NOWY KLIENT' 
+      final String? customerName = cart.isNewCustomer
+          ? 'NOWY KLIENT'
           : cart.selectedCustomer?.name;
-      
+
       // Uwagi: dane nowego klienta + ewentualne dodatkowe uwagi
       final String? notes = cart.fullOrderNotes;
-      
+
       // Create order object
       // CENY PÓŁKOWE - finalna kalkulacja rabatów w nexo PRO
       final order = Order(
@@ -848,10 +848,10 @@ class _CartSummary extends StatelessWidget {
         Navigator.of(context).pop();
 
         // Show success message
-        final message = cart.isNewCustomer 
+        final message = cart.isNewCustomer
             ? 'Zamówienie utworzone dla NOWEGO KLIENTA!\nDane w uwagach - biuro utworzy kartę.'
             : 'Zamówienie utworzone pomyślnie!';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),

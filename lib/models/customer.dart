@@ -1,5 +1,5 @@
 /// Kontrahent (Klient) z nexo PRO
-/// 
+///
 /// ROZRACHUNKI (wymaganie klienta):
 /// - Pole `balance` zawiera saldo należności klienta
 /// - Wartość dodatnia = klient jest winien firmie
@@ -21,7 +21,7 @@ class Customer {
   final String? regon;
   final String? voivodeship;
   final DateTime? syncedAt;
-  
+
   // ROZRACHUNKI - wymaganie klienta
   /// Saldo należności klienta (ile jest winien firmie)
   /// Wartość dodatnia = dług, ujemna = nadpłata
@@ -54,9 +54,9 @@ class Customer {
 
   /// Czy klient ma zaległości
   bool get hasDebt => (balance ?? 0) > 0;
-  
+
   /// Czy klient przekroczył limit kredytowy
-  bool get isOverCreditLimit => 
+  bool get isOverCreditLimit =>
       creditLimit != null && (balance ?? 0) > creditLimit!;
 
   factory Customer.fromJson(Map<String, dynamic> json) {
@@ -75,18 +75,18 @@ class Customer {
       nip: json['nip'] as String?,
       regon: json['regon'] as String?,
       voivodeship: json['voivodeship'] as String?,
-      syncedAt: json['syncedAt'] != null 
-          ? DateTime.parse(json['syncedAt'] as String) 
+      syncedAt: json['syncedAt'] != null
+          ? DateTime.parse(json['syncedAt'] as String)
           : null,
       // Rozrachunki
-      balance: json['balance'] != null 
-          ? (json['balance'] as num).toDouble() 
+      balance: json['balance'] != null
+          ? (json['balance'] as num).toDouble()
           : null,
-      balanceUpdatedAt: json['balanceUpdatedAt'] != null 
-          ? DateTime.parse(json['balanceUpdatedAt'] as String) 
+      balanceUpdatedAt: json['balanceUpdatedAt'] != null
+          ? DateTime.parse(json['balanceUpdatedAt'] as String)
           : null,
-      creditLimit: json['creditLimit'] != null 
-          ? (json['creditLimit'] as num).toDouble() 
+      creditLimit: json['creditLimit'] != null
+          ? (json['creditLimit'] as num).toDouble()
           : null,
     );
   }
@@ -131,18 +131,18 @@ class Customer {
       nip: map['nip'] as String?,
       regon: map['regon'] as String?,
       voivodeship: map['voivodeship'] as String?,
-      syncedAt: map['synced_at'] != null 
-          ? DateTime.parse(map['synced_at'] as String) 
+      syncedAt: map['synced_at'] != null
+          ? DateTime.parse(map['synced_at'] as String)
           : null,
       // Rozrachunki
-      balance: map['balance'] != null 
-          ? (map['balance'] as num).toDouble() 
+      balance: map['balance'] != null
+          ? (map['balance'] as num).toDouble()
           : null,
-      balanceUpdatedAt: map['balance_updated_at'] != null 
-          ? DateTime.parse(map['balance_updated_at'] as String) 
+      balanceUpdatedAt: map['balance_updated_at'] != null
+          ? DateTime.parse(map['balance_updated_at'] as String)
           : null,
-      creditLimit: map['credit_limit'] != null 
-          ? (map['credit_limit'] as num).toDouble() 
+      creditLimit: map['credit_limit'] != null
+          ? (map['credit_limit'] as num).toDouble()
           : null,
     );
   }
