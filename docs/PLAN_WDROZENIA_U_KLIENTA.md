@@ -2,7 +2,7 @@
 
 ## Scenariusz: Wszystko na komputerze klienta z nexo PRO
 
-**Data utworzenia:** 2026-01-22  
+**Data utworzenia:** 2026-01-22
 **Wersja:** 1.0
 
 ---
@@ -108,19 +108,61 @@ PORT=3000
 
 [ ] 2.5. Uruchom Cloud API
     npm run start:prod
-    
+
     → Sprawdź: http://localhost:3000 (powinno zwrócić 404)
 ```
 
 ---
 
-### ETAP 3: Konfiguracja Nexo Bridge (30 min)
+### ETAP 3: Konfiguracja Nexo Bridge (30-45 min)
+
+> ✅ **POTWIERDZONE:** Klient ma Sfera SDK wbudowane w nexo PRO!
 
 ```
 [ ] 3.1. Skopiuj folder iko-nexo-bridge na dysk C:
     C:\IKO\iko-nexo-bridge\
 
-[ ] 3.2. Skonfiguruj appsettings.json
+[ ] 3.2. Znajdź lokalizację Sfera SDK na komputerze klienta
+```
+
+**Typowe ścieżki Sfera.dll:**
+- `C:\Program Files\InsERT\nexo PRO\Sfera.dll`
+- `C:\Program Files (x86)\InsERT\nexo PRO\Sfera.dll`
+- `C:\InsERT\nexo PRO\Sfera.dll`
+
+```
+[ ] Zanotuj ścieżkę: _________________________________
+
+[ ] 3.3. Włącz integrację Sfera SDK
+```
+
+Edytuj plik `C:\IKO\iko-nexo-bridge\IkoNexoBridge.csproj`:
+
+**Krok A:** Odkomentuj linię `DefineConstants`:
+```xml
+<DefineConstants>USE_SFERA</DefineConstants>
+```
+
+**Krok B:** Odkomentuj sekcję z referencjami i zaktualizuj ścieżki:
+```xml
+<ItemGroup>
+  <Reference Include="Sfera">
+    <HintPath>C:\ŚCIEŻKA\DO\Sfera.dll</HintPath>
+    <Private>true</Private>
+  </Reference>
+  <Reference Include="Sfera.Model">
+    <HintPath>C:\ŚCIEŻKA\DO\Sfera.Model.dll</HintPath>
+    <Private>true</Private>
+  </Reference>
+  <Reference Include="InsERT.Mox">
+    <HintPath>C:\ŚCIEŻKA\DO\InsERT.Mox.dll</HintPath>
+    <Private>true</Private>
+  </Reference>
+</ItemGroup>
+```
+
+```
+[ ] 3.4. Skonfiguruj appsettings.json
 ```
 
 Plik `C:\IKO\iko-nexo-bridge\appsettings.json`:
@@ -151,14 +193,18 @@ Plik `C:\IKO\iko-nexo-bridge\appsettings.json`:
 - `OperatorPassword` - hasło operatora nexo
 
 ```
-[ ] 3.3. Zbuduj aplikację
+[ ] 3.5. Zbuduj aplikację
     cd C:\IKO\iko-nexo-bridge
     dotnet build -c Release
 
-[ ] 3.4. Uruchom testowo
+    → Powinno być: "Build succeeded"
+    → Jeśli błąd "Sfera.dll not found" - sprawdź ścieżki w .csproj
+
+[ ] 3.6. Uruchom testowo
     dotnet run
 
     → Sprawdź logi: "Connected to nexo PRO"
+    → Sprawdź logi: "Sfera SDK initialized" (jeśli USE_SFERA włączone)
 ```
 
 ---
@@ -186,7 +232,7 @@ Invoke-RestMethod -Uri "http://localhost:3000/admin/users" -Method POST -Content
 
 ```
 [ ] 4.2. Zapisz dane logowania dla handlowców
-    
+
     | Handlowiec | Username | Hasło |
     |------------|----------|-------|
     | __________ | ________ | _____ |
@@ -395,7 +441,7 @@ Typowe problemy i rozwiązania:
 | Testy | 20 min |
 | **RAZEM** | **~3.5 godziny** |
 
-**Bufor na problemy:** +1 godzina  
+**Bufor na problemy:** +1 godzina
 **Całkowity czas spotkania:** ~4.5 godziny
 
 ---
