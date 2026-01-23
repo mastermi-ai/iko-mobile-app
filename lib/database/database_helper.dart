@@ -306,11 +306,6 @@ class DatabaseHelper {
     );
   }
 
-  // ============================================
-  // QUOTES (Oferty)
-  // ============================================
-
-  /// Insert a new quote to local database
   Future<int> insertQuote(Quote quote) async {
     final db = await database;
     return await db.insert('pending_quotes', quote.toDatabase());
@@ -393,11 +388,6 @@ class DatabaseHelper {
     );
   }
 
-  // ============================================
-  // SAVED CARTS (Schowki)
-  // ============================================
-
-  /// Save current cart as a "schowek"
   Future<int> saveCart(SavedCart cart) async {
     final db = await database;
     return await db.insert('saved_carts', cart.toDatabase());

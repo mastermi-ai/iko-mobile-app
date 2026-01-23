@@ -4,10 +4,6 @@ import '../models/quote.dart';
 import '../database/database_helper.dart';
 import '../services/api_service.dart';
 
-// ============================================
-// EVENTS
-// ============================================
-
 abstract class QuotesEvent extends Equatable {
   const QuotesEvent();
 
@@ -56,10 +52,6 @@ class ConvertQuoteToOrder extends QuotesEvent {
   List<Object?> get props => [localId];
 }
 
-// ============================================
-// STATES
-// ============================================
-
 abstract class QuotesState extends Equatable {
   const QuotesState();
 
@@ -80,20 +72,16 @@ class QuotesLoaded extends QuotesState {
     required this.syncedQuotes,
   });
 
-  /// All quotes combined
   List<Quote> get allQuotes => [...localQuotes, ...syncedQuotes];
 
-  /// Only draft quotes
   List<Quote> get draftQuotes =>
       localQuotes.where((q) => q.status == 'draft').toList();
 
-  /// Sent/pending quotes
   List<Quote> get sentQuotes =>
       [...localQuotes, ...syncedQuotes]
           .where((q) => q.status == 'sent')
           .toList();
 
-  /// Accepted quotes
   List<Quote> get acceptedQuotes =>
       [...localQuotes, ...syncedQuotes]
           .where((q) => q.status == 'accepted')
@@ -145,10 +133,6 @@ class QuoteConverted extends QuotesState {
   List<Object?> get props => [quote];
 }
 
-// ============================================
-// BLOC
-// ============================================
-
 class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
   final DatabaseHelper _databaseHelper;
   final ApiService _apiService;
@@ -173,16 +157,14 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
   ) async {
     emit(QuotesLoading());
     try {
-      // Load local quotes from SQLite
       final localQuotes = await _databaseHelper.getAllLocalQuotes();
 
-      // Try to load synced quotes from API
       List<Quote> syncedQuotes = [];
       try {
         final response = await _apiService.getQuotes();
         syncedQuotes = response;
       } catch (e) {
-        // API unavailable - just show local quotes
+        // API unavailable - show local quotes only
       }
 
       emit(QuotesLoaded(
@@ -207,10 +189,8 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
     }
 
     try {
-      // Reload local quotes
       final localQuotes = await _databaseHelper.getAllLocalQuotes();
 
-      // Reload synced quotes from API
       List<Quote> syncedQuotes = [];
       try {
         syncedQuotes = await _apiService.getQuotes();
@@ -235,10 +215,8 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
     Emitter<QuotesState> emit,
   ) async {
     try {
-      // Save to local database
       final localId = await _databaseHelper.insertQuote(event.quote);
 
-      // Try to sync with API
       bool synced = false;
       try {
         await _apiService.createQuote(event.quote.toJson());
@@ -254,8 +232,6 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
       );
 
       emit(QuoteCreated(savedQuote));
-
-      // Reload quotes list
       add(LoadQuotes());
     } catch (e) {
       emit(QuotesError('Nie udało się utworzyć oferty: ${e.toString()}'));
@@ -268,8 +244,6 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
   ) async {
     try {
       await _databaseHelper.updateQuoteStatus(event.localId, event.newStatus);
-
-      // Reload quotes
       add(LoadQuotes());
     } catch (e) {
       emit(QuotesError('Nie udało się zaktualizować statusu: ${e.toString()}'));
@@ -282,8 +256,6 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
   ) async {
     try {
       await _databaseHelper.deleteQuote(event.localId);
-
-      // Reload quotes
       add(LoadQuotes());
     } catch (e) {
       emit(QuotesError('Nie udało się usunąć oferty: ${e.toString()}'));
@@ -295,16 +267,13 @@ class QuotesBloc extends Bloc<QuotesEvent, QuotesState> {
     Emitter<QuotesState> emit,
   ) async {
     try {
-      // Get the quote
       final quote = await _databaseHelper.getQuoteByLocalId(event.localId);
       if (quote == null) {
         emit(const QuotesError('Nie znaleziono oferty'));
         return;
       }
 
-      // Update status to converted
       await _databaseHelper.updateQuoteStatus(event.localId, 'converted');
-
       emit(QuoteConverted(quote));
     } catch (e) {
       emit(QuotesError('Nie udało się przekonwertować oferty: ${e.toString()}'));

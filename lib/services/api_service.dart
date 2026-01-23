@@ -121,11 +121,6 @@ class ApiService {
     }
   }
 
-  // ============================================
-  // QUOTES (Oferty)
-  // ============================================
-
-  // Create Quote
   Future<Map<String, dynamic>> createQuote(Map<String, dynamic> quoteData) async {
     try {
       final response = await _dio.post('/quotes', data: quoteData);
