@@ -63,6 +63,14 @@ class Product {
   bool get hasEan => ean != null && ean!.isNotEmpty;
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    // Helper to parse price (can be String or num from API)
+    double parsePrice(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+    
     return Product(
       id: json['id'] as int,
       clientId: json['clientId'] as int,
@@ -71,12 +79,12 @@ class Product {
       name: json['name'] as String,
       description: json['description'] as String?,
       imageUrl: json['imageUrl'] as String?,
-      priceNetto: (json['priceNetto'] as num).toDouble(),
+      priceNetto: parsePrice(json['priceNetto']),
       priceBrutto: json['priceBrutto'] != null
-          ? (json['priceBrutto'] as num).toDouble()
+          ? parsePrice(json['priceBrutto'])
           : null,
       vatRate: json['vatRate'] != null
-          ? (json['vatRate'] as num).toDouble()
+          ? parsePrice(json['vatRate'])
           : null,
       unit: json['unit'] as String? ?? 'szt',
       ean: json['ean'] as String?,
