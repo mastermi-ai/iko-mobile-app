@@ -5,10 +5,8 @@ import '../models/customer.dart';
 import '../models/quote.dart';
 
 class ApiService {
-  // Cloudflare tunnel URL for demo (change to production server URL later)
-  // URL API - zmień na publiczny URL do testów na tablecie
-  // static const String baseUrl = 'https://consumers-earrings-wishlist-veterans.trycloudflare.com';
-  static const String baseUrl = 'http://localhost:3000';  // Lokalne testy
+  // Cloud API URL - serwer klienta (stały adres)
+  static const String baseUrl = 'https://iko-grabos.com';
 
   late final Dio _dio;
   String? _token;

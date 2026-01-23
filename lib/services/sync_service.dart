@@ -65,6 +65,7 @@ class SyncService {
     int failed = 0;
 
     try {
+      await _apiService.loadToken(); // Load saved token before API call
       final pendingOrders = await _dbHelper.getPendingOrders();
 
       for (final orderMap in pendingOrders) {
@@ -108,6 +109,7 @@ class SyncService {
     int failed = 0;
 
     try {
+      await _apiService.loadToken(); // Load saved token before API call
       final pendingQuotes = await _dbHelper.getPendingQuotes();
 
       for (final quote in pendingQuotes) {
@@ -131,6 +133,7 @@ class SyncService {
   /// Sync products from server to local DB
   Future<int> syncProducts() async {
     try {
+      await _apiService.loadToken(); // Load saved token before API call
       final products = await _apiService.syncProducts();
       if (products.isNotEmpty) {
         await _dbHelper.insertProducts(products);
@@ -145,6 +148,7 @@ class SyncService {
   /// Sync customers from server to local DB
   Future<int> syncCustomers() async {
     try {
+      await _apiService.loadToken(); // Load saved token before API call
       final customers = await _apiService.syncCustomers();
       if (customers.isNotEmpty) {
         await _dbHelper.insertCustomers(customers);
