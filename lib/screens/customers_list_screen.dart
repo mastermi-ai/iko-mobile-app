@@ -233,7 +233,7 @@ class CustomerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Customer Info
               Expanded(
                 child: Column(
@@ -264,6 +264,21 @@ class CustomerCard extends StatelessWidget {
                         ],
                       ),
                     const SizedBox(height: 4),
+                    if (customer.nip != null)
+                      Row(
+                        children: [
+                          Icon(Icons.receipt_long, size: 14, color: Colors.blue[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'NIP: ${customer.nip}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     if (customer.phone1 != null)
                       Row(
                         children: [
@@ -281,7 +296,7 @@ class CustomerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Arrow
               const Icon(Icons.chevron_right, color: Colors.grey),
             ],

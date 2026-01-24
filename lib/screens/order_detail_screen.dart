@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
+import '../widgets/app_notification.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final dynamic order;
@@ -50,9 +51,7 @@ class OrderDetailScreen extends StatelessWidget {
               icon: const Icon(Icons.sync),
               onPressed: () {
                 // TODO: Retry sync
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Próba synchronizacji...')),
-                );
+                AppNotification.info(context, 'Próba synchronizacji...');
               },
             ),
         ],

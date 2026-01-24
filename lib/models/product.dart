@@ -70,7 +70,7 @@ class Product {
       if (value is String) return double.tryParse(value) ?? 0.0;
       return 0.0;
     }
-    
+
     return Product(
       id: json['id'] as int,
       clientId: json['clientId'] as int,
@@ -137,8 +137,7 @@ class Product {
       'ean': ean,
       'active': active ? 1 : 0,
       'synced_at': syncedAt?.toIso8601String(),
-      'thumbnail_base64': thumbnailBase64,
-      'thumbnail_synced_at': thumbnailSyncedAt?.toIso8601String(),
+      // thumbnail_base64 and thumbnail_synced_at NOT in local SQLite schema yet
     };
   }
 

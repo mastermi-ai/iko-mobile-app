@@ -8,6 +8,7 @@ import '../models/order.dart';
 import '../models/customer.dart';
 import '../database/database_helper.dart';
 import '../services/api_service.dart';
+import '../widgets/app_notification.dart';
 
 class QuoteDetailScreen extends StatelessWidget {
   final Quote quote;
@@ -47,20 +48,10 @@ class _QuoteDetailView extends StatelessWidget {
     return BlocListener<QuotesBloc, QuotesState>(
       listener: (context, state) {
         if (state is QuoteConverted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Oferta została przekonwertowana na zamówienie!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppNotification.success(context, 'Oferta przekonwertowana na zamówienie!');
           Navigator.of(context).pop(true); // Return true to refresh list
         } else if (state is QuotesError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppNotification.error(context, state.message);
         }
       },
       child: Scaffold(
@@ -343,22 +334,12 @@ class _QuoteDetailView extends StatelessWidget {
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Zamówienie zostało utworzone!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppNotification.success(context, 'Zamówienie utworzone!');
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppNotification.error(context, 'Błąd tworzenia zamówienia');
       }
     }
   }
@@ -392,12 +373,7 @@ class _QuoteDetailView extends StatelessWidget {
     }
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pozycje zostały dodane do koszyka'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppNotification.success(context, 'Pozycje dodane do koszyka');
       Navigator.of(context).pop();
     }
   }

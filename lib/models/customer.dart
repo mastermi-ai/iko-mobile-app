@@ -108,10 +108,8 @@ class Customer {
       'regon': regon,
       'voivodeship': voivodeship,
       'synced_at': syncedAt?.toIso8601String(),
-      // Rozrachunki
-      'balance': balance,
-      'balance_updated_at': balanceUpdatedAt?.toIso8601String(),
-      'credit_limit': creditLimit,
+      // Uwaga: balance, balance_updated_at, credit_limit nie są zapisywane
+      // do lokalnej bazy - tabela SQLite ich nie ma. Dostępne tylko z API.
     };
   }
 

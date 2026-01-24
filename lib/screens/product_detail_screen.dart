@@ -2,12 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/product.dart';
 import '../../bloc/cart_cubit.dart';
-import 'cart_screen.dart';
+import '../../widgets/app_notification.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailScreen({super.key, required this.product});
+
+  @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  int _quantity = 1;
+
+  void _incrementQuantity() {
+    setState(() {
+      _quantity++;
+    });
+  }
+
+  void _decrementQuantity() {
+    if (_quantity > 1) {
+      setState(() {
+        _quantity--;
+      });
+    }
+  }
+
+  void _addToCart(BuildContext context) {
+    context.read<CartCubit>().addProduct(widget.product, quantity: _quantity);
+    AppNotification.cartAdded(context, widget.product.name, quantity: _quantity);
+    setState(() {
+      _quantity = 1;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,25 +46,7 @@ class ProductDetailScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_shopping_cart),
-            onPressed: () {
-              context.read<CartCubit>().addProduct(product);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${product.name} dodano do koszyka'),
-                  action: SnackBarAction(
-                    label: 'KOSZYK',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CartScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            },
+            onPressed: () => _addToCart(context),
           ),
         ],
       ),
@@ -48,9 +59,9 @@ class ProductDetailScreen extends StatelessWidget {
               width: double.infinity,
               height: 300,
               color: Colors.grey[200],
-              child: product.imageUrl != null
+              child: widget.product.imageUrl != null
                   ? Image.network(
-                      product.imageUrl!,
+                      widget.product.imageUrl!,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
                         return const Center(
@@ -78,7 +89,7 @@ class ProductDetailScreen extends StatelessWidget {
                 children: [
                   // Product Name
                   Text(
-                    product.name,
+                    widget.product.name,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -88,16 +99,16 @@ class ProductDetailScreen extends StatelessWidget {
 
                   // Product Code
                   Text(
-                    'Kod: ${product.code}',
+                    'Kod: ${widget.product.code}',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],
                     ),
                   ),
-                  if (product.ean != null) ...[
+                  if (widget.product.ean != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'EAN: ${product.ean}',
+                      'EAN: ${widget.product.ean}',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -128,7 +139,7 @@ class ProductDetailScreen extends StatelessWidget {
                             children: [
                               const Text('Netto:'),
                               Text(
-                                '${product.priceNetto.toStringAsFixed(2)} zł',
+                                '${widget.product.priceNetto.toStringAsFixed(2)} zł',
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -137,14 +148,14 @@ class ProductDetailScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          if (product.priceBrutto != null) ...[
+                          if (widget.product.priceBrutto != null) ...[
                             const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Brutto:'),
                                 Text(
-                                  '${product.priceBrutto!.toStringAsFixed(2)} zł',
+                                  '${widget.product.priceBrutto!.toStringAsFixed(2)} zł',
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
@@ -153,14 +164,14 @@ class ProductDetailScreen extends StatelessWidget {
                               ],
                             ),
                           ],
-                          if (product.vatRate != null) ...[
+                          if (widget.product.vatRate != null) ...[
                             const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('VAT:'),
                                 Text(
-                                  '${product.vatRate!.toStringAsFixed(0)}%',
+                                  '${widget.product.vatRate!.toStringAsFixed(0)}%',
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.grey[700],
@@ -183,12 +194,12 @@ class ProductDetailScreen extends StatelessWidget {
                         'Jednostka: ',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(product.unit),
+                      Text(widget.product.unit),
                     ],
                   ),
 
                   // Description
-                  if (product.description != null) ...[
+                  if (widget.product.description != null) ...[
                     const SizedBox(height: 24),
                     const Text(
                       'Opis',
@@ -199,42 +210,137 @@ class ProductDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      product.description!,
+                      widget.product.description!,
                       style: const TextStyle(fontSize: 16),
                     ),
                   ],
 
                   const SizedBox(height: 32),
 
+                  // Quantity Selector
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Ilość:',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        // Minus button
+                        Material(
+                          color: _quantity > 1 ? Colors.blue[700] : Colors.grey[400],
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: _quantity > 1 ? _decrementQuantity : null,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.remove,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Quantity display
+                        Container(
+                          width: 80,
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$_quantity',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        // Plus button
+                        Material(
+                          color: Colors.blue[700],
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: _incrementQuantity,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Summary (total for selected quantity)
+                  if (_quantity > 1)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green[200]!),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Razem (x$_quantity):',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green[800],
+                            ),
+                          ),
+                          Text(
+                            '${(widget.product.priceNetto * _quantity).toStringAsFixed(2)} zł netto',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
                   // Add to Cart Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        context.read<CartCubit>().addProduct(product);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.name} dodano do koszyka'),
-                            action: SnackBarAction(
-                              label: 'KOSZYK',
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const CartScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      },
+                      onPressed: () => _addToCart(context),
                       icon: const Icon(Icons.add_shopping_cart),
-                      label: const Text(
-                        'Dodaj do koszyka',
-                        style: TextStyle(fontSize: 16),
+                      label: Text(
+                        _quantity > 1
+                            ? 'Dodaj $_quantity szt. do koszyka'
+                            : 'Dodaj do koszyka',
+                        style: const TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[700],
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),

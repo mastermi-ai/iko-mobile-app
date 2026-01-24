@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'product.dart';
+import 'customer.dart';
 
 /// Cart item holding product and quantity
 class CartItem extends Equatable {
@@ -34,4 +35,41 @@ class CartItem extends Equatable {
 
   @override
   List<Object?> get props => [product.id, quantity];
+}
+
+/// Koszyk dla jednego klienta (multi-koszyk)
+class CustomerCart extends Equatable {
+  final Customer customer;
+  final List<CartItem> items;
+
+  const CustomerCart({
+    required this.customer,
+    this.items = const [],
+  });
+
+  /// Total number of items in this customer's cart
+  int get itemCount => items.fold(0, (sum, item) => sum + item.quantity);
+
+  /// Total value (netto)
+  double get totalNetto => items.fold(0.0, (sum, item) => sum + item.totalNetto);
+
+  /// Total value (brutto)
+  double get totalBrutto => items.fold(0.0, (sum, item) => sum + item.totalBrutto);
+
+  /// Check if cart is empty
+  bool get isEmpty => items.isEmpty;
+
+  /// Copy with modifications
+  CustomerCart copyWith({
+    Customer? customer,
+    List<CartItem>? items,
+  }) {
+    return CustomerCart(
+      customer: customer ?? this.customer,
+      items: items ?? this.items,
+    );
+  }
+
+  @override
+  List<Object?> get props => [customer.id, items];
 }

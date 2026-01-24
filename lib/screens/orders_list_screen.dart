@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../bloc/orders_bloc.dart';
 import '../../database/database_helper.dart';
 import '../../services/api_service.dart';
+import '../../widgets/app_notification.dart';
 import 'order_detail_screen.dart';
 
 class OrdersListScreen extends StatelessWidget {
@@ -34,9 +35,7 @@ class OrdersListView extends StatelessWidget {
             icon: const Icon(Icons.filter_list),
             onPressed: () {
               // TODO: Add filters
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Filtry - wkrótce')),
-              );
+              AppNotification.info(context, 'Filtry - wkrótce');
             },
           ),
         ],

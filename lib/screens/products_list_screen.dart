@@ -5,6 +5,7 @@ import '../../bloc/cart_cubit.dart';
 import '../../models/product.dart';
 import '../../database/database_helper.dart';
 import '../../services/api_service.dart';
+import '../../widgets/app_notification.dart';
 import 'product_detail_screen.dart';
 import 'barcode_scanner_screen.dart';
 
@@ -68,23 +69,18 @@ class _ProductsListViewState extends State<ProductsListView> {
       _showProductFoundDialog(context, product);
     } else if (context.mounted) {
       // Produkt nie znaleziony - wyszukaj w wyszukiwarce
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Nie znaleziono produktu z kodem: $scannedCode'),
-          backgroundColor: Colors.orange,
-          action: SnackBarAction(
-            label: 'Szukaj',
-            textColor: Colors.white,
-            onPressed: () {
-              // Wyszukaj po kodzie
-              setState(() {
-                _isSearching = true;
-                _searchController.text = scannedCode;
-              });
-              context.read<ProductsBloc>().add(SearchProducts(scannedCode));
-            },
-          ),
-        ),
+      AppNotification.show(
+        context,
+        message: 'Nie znaleziono produktu: $scannedCode',
+        isError: true,
+        actionLabel: 'Szukaj',
+        onAction: () {
+          setState(() {
+            _isSearching = true;
+            _searchController.text = scannedCode;
+          });
+          context.read<ProductsBloc>().add(SearchProducts(scannedCode));
+        },
       );
     }
   }
@@ -147,13 +143,7 @@ class _ProductsListViewState extends State<ProductsListView> {
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.read<CartCubit>().addProduct(product);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Dodano: ${product.name}'),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              AppNotification.cartAdded(context, product.name);
             },
             icon: const Icon(Icons.add_shopping_cart),
             label: const Text('Do koszyka'),

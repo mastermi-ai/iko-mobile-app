@@ -134,13 +134,18 @@ class SyncService {
   Future<int> syncProducts() async {
     try {
       await _apiService.loadToken(); // Load saved token before API call
+      print('[SYNC] syncProducts: Token loaded, calling API...');
       final products = await _apiService.syncProducts();
+      print('[SYNC] syncProducts: Got ${products.length} products from API');
       if (products.isNotEmpty) {
         await _dbHelper.insertProducts(products);
+        print('[SYNC] syncProducts: Inserted ${products.length} products to DB');
         return products.length;
       }
-    } catch (e) {
-      // API error - skip products sync
+    } catch (e, stackTrace) {
+      // Log the error for debugging
+      print('[SYNC] syncProducts ERROR: $e');
+      print('[SYNC] syncProducts STACK: $stackTrace');
     }
     return 0;
   }
@@ -149,13 +154,18 @@ class SyncService {
   Future<int> syncCustomers() async {
     try {
       await _apiService.loadToken(); // Load saved token before API call
+      print('[SYNC] syncCustomers: Token loaded, calling API...');
       final customers = await _apiService.syncCustomers();
+      print('[SYNC] syncCustomers: Got ${customers.length} customers from API');
       if (customers.isNotEmpty) {
         await _dbHelper.insertCustomers(customers);
+        print('[SYNC] syncCustomers: Inserted ${customers.length} customers to DB');
         return customers.length;
       }
-    } catch (e) {
-      // API error - skip customers sync
+    } catch (e, stackTrace) {
+      // Log the error for debugging
+      print('[SYNC] syncCustomers ERROR: $e');
+      print('[SYNC] syncCustomers STACK: $stackTrace');
     }
     return 0;
   }

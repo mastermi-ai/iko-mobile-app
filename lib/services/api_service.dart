@@ -90,11 +90,28 @@ class ApiService {
   Future<List<Product>> syncProducts({String? since}) async {
     try {
       final queryParams = since != null ? {'since': since} : null;
+      print('[API] syncProducts: Calling GET /sync/products, token: ${_token != null ? "present" : "NULL"}');
       final response = await _dio.get('/sync/products', queryParameters: queryParams);
+      print('[API] syncProducts: Response status: ${response.statusCode}');
+      print('[API] syncProducts: Response data type: ${response.data.runtimeType}');
 
       final data = response.data['data'] as List;
-      return data.map((json) => Product.fromJson(json)).toList();
+      print('[API] syncProducts: Got ${data.length} items in data array');
+
+      final products = <Product>[];
+      for (int i = 0; i < data.length; i++) {
+        try {
+          products.add(Product.fromJson(data[i]));
+        } catch (parseError) {
+          print('[API] syncProducts: Error parsing product $i: $parseError');
+          print('[API] syncProducts: Product JSON: ${data[i]}');
+        }
+      }
+      print('[API] syncProducts: Successfully parsed ${products.length} products');
+      return products;
     } on DioException catch (e) {
+      print('[API] syncProducts ERROR: ${e.type} - ${e.message}');
+      print('[API] syncProducts ERROR response: ${e.response?.data}');
       throw Exception('Failed to sync products: ${e.message}');
     }
   }
@@ -168,6 +185,16 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       throw Exception('Failed to convert quote: ${e.response?.data['message'] ?? e.message}');
+    }
+  }
+
+  // Get Customer Order History (by customer id)
+  Future<List<Map<String, dynamic>>> getCustomerOrderHistory(int customerId) async {
+    try {
+      final response = await _dio.get('/orders/history/customer/$customerId');
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to get order history: ${e.message}');
     }
   }
 }

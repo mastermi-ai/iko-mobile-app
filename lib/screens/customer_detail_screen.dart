@@ -1,10 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/customer.dart';
+import '../../bloc/cart_cubit.dart';
+import '../../services/api_service.dart';
+import '../../widgets/app_notification.dart';
+import 'products_list_screen.dart';
 
-class CustomerDetailScreen extends StatelessWidget {
+class CustomerDetailScreen extends StatefulWidget {
   final Customer customer;
 
   const CustomerDetailScreen({super.key, required this.customer});
+
+  @override
+  State<CustomerDetailScreen> createState() => _CustomerDetailScreenState();
+}
+
+class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
+  List<Map<String, dynamic>>? _orderHistory;
+  bool _loadingHistory = false;
+  String? _historyError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrderHistory();
+  }
+
+  Future<void> _loadOrderHistory() async {
+    setState(() {
+      _loadingHistory = true;
+      _historyError = null;
+    });
+
+    try {
+      final apiService = ApiService();
+      await apiService.loadToken();
+      final history = await apiService.getCustomerOrderHistory(widget.customer.id);
+      if (mounted) {
+        setState(() {
+          _orderHistory = history;
+          _loadingHistory = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _historyError = 'Nie udało się pobrać historii';
+          _loadingHistory = false;
+        });
+      }
+    }
+  }
+
+  void _startNewOrder(BuildContext context) {
+    final cartCubit = context.read<CartCubit>();
+
+    // Multi-koszyk: po prostu wybierz klienta jako aktywnego
+    // Produkty poprzednich klientów zostają w ich koszykach
+    cartCubit.selectCustomer(widget.customer);
+
+    AppNotification.success(
+      context,
+      'Klient aktywny: ${widget.customer.shortName ?? widget.customer.name}',
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ProductsListScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,13 +78,8 @@ class CustomerDetailScreen extends StatelessWidget {
         title: const Text('Szczegóły klienta'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              // TODO: Edit customer
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edycja - wkrótce')),
-              );
-            },
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadOrderHistory,
           ),
         ],
       ),
@@ -49,17 +109,17 @@ class CustomerDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    customer.name,
+                    widget.customer.name,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (customer.shortName != null) ...[
+                  if (widget.customer.shortName != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      customer.shortName!,
+                      widget.customer.shortName!,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -76,36 +136,36 @@ class CustomerDetailScreen extends StatelessWidget {
               title: 'Kontakt',
               icon: Icons.contact_phone,
               children: [
-                if (customer.address != null)
-                  _buildInfoRow(Icons.home, 'Adres', customer.address!),
-                if (customer.postalCode != null || customer.city != null)
+                if (widget.customer.address != null)
+                  _buildInfoRow(Icons.home, 'Adres', widget.customer.address!),
+                if (widget.customer.postalCode != null || widget.customer.city != null)
                   _buildInfoRow(
                     Icons.location_city,
                     'Kod/Miasto',
-                    '${customer.postalCode ?? ''} ${customer.city ?? ''}'.trim(),
+                    '${widget.customer.postalCode ?? ''} ${widget.customer.city ?? ''}'.trim(),
                   ),
-                if (customer.voivodeship != null)
-                  _buildInfoRow(Icons.map, 'Województwo', customer.voivodeship!),
-                if (customer.phone1 != null)
-                  _buildInfoRow(Icons.phone, 'Telefon 1', customer.phone1!),
-                if (customer.phone2 != null)
-                  _buildInfoRow(Icons.phone, 'Telefon 2', customer.phone2!),
-                if (customer.email != null)
-                  _buildInfoRow(Icons.email, 'Email', customer.email!),
+                if (widget.customer.voivodeship != null)
+                  _buildInfoRow(Icons.map, 'Województwo', widget.customer.voivodeship!),
+                if (widget.customer.phone1 != null)
+                  _buildInfoRow(Icons.phone, 'Telefon 1', widget.customer.phone1!),
+                if (widget.customer.phone2 != null)
+                  _buildInfoRow(Icons.phone, 'Telefon 2', widget.customer.phone2!),
+                if (widget.customer.email != null)
+                  _buildInfoRow(Icons.email, 'Email', widget.customer.email!),
               ],
             ),
 
             // Company Information
-            if (customer.nip != null || customer.regon != null)
+            if (widget.customer.nip != null || widget.customer.regon != null)
               _buildSection(
                 context,
                 title: 'Dane firmowe',
                 icon: Icons.business,
                 children: [
-                  if (customer.nip != null)
-                    _buildInfoRow(Icons.receipt_long, 'NIP', customer.nip!),
-                  if (customer.regon != null)
-                    _buildInfoRow(Icons.badge, 'REGON', customer.regon!),
+                  if (widget.customer.nip != null)
+                    _buildInfoRow(Icons.receipt_long, 'NIP', widget.customer.nip!),
+                  if (widget.customer.regon != null)
+                    _buildInfoRow(Icons.badge, 'REGON', widget.customer.regon!),
                 ],
               ),
 
@@ -113,25 +173,12 @@ class CustomerDetailScreen extends StatelessWidget {
 
             // Action Buttons
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Create order for this customer
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Nowe zamówienie dla ${customer.name}'),
-                          action: SnackBarAction(
-                            label: 'KOSZYK',
-                            onPressed: () {
-                              // TODO: Navigate to cart with selected customer
-                            },
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: () => _startNewOrder(context),
                     icon: const Icon(Icons.add_shopping_cart),
                     label: const Text(
                       'Nowe zamówienie',
@@ -143,24 +190,129 @@ class CustomerDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: View orders history
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Historia zamówień - wkrótce')),
-                      );
-                    },
-                    icon: const Icon(Icons.history),
-                    label: const Text('Historia zamówień'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Order History Section
+            _buildSection(
+              context,
+              title: 'Historia zamówień',
+              icon: Icons.history,
+              children: [
+                if (_loadingHistory)
+                  const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_historyError != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red[300], size: 48),
+                          const SizedBox(height: 8),
+                          Text(_historyError!, style: TextStyle(color: Colors.red[300])),
+                          TextButton(
+                            onPressed: _loadOrderHistory,
+                            child: const Text('Spróbuj ponownie'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_orderHistory == null || _orderHistory!.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.inbox, color: Colors.grey[400], size: 48),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Brak historii zamówień',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ..._orderHistory!.map((order) => _buildOrderHistoryItem(order)),
+              ],
+            ),
+
+            const SizedBox(height: 32),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderHistoryItem(Map<String, dynamic> order) {
+    final docNumber = order['documentNumber'] ?? 'Brak numeru';
+    final docType = order['documentType'] ?? '';
+    final docDate = order['documentDate']?.toString().substring(0, 10) ?? '';
+    final totalBrutto = (order['totalBrutto'] as num?)?.toDouble() ?? 0;
+
+    String docTypeLabel = docType;
+    Color docTypeColor = Colors.blue;
+    switch (docType) {
+      case 'FS':
+        docTypeLabel = 'Faktura';
+        docTypeColor = Colors.blue;
+        break;
+      case 'PA':
+        docTypeLabel = 'Paragon';
+        docTypeColor = Colors.green;
+        break;
+      case 'WZ':
+        docTypeLabel = 'Wydanie';
+        docTypeColor = Colors.orange;
+        break;
+      case 'FP':
+        docTypeLabel = 'Faktura pro forma';
+        docTypeColor = Colors.purple;
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: docTypeColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            docTypeLabel,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: docTypeColor,
+            ),
+          ),
+        ),
+        title: Text(
+          docNumber,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(docDate),
+        trailing: Text(
+          '${totalBrutto.toStringAsFixed(2)} zł',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.green[700],
+          ),
         ),
       ),
     );

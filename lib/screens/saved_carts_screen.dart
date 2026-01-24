@@ -5,6 +5,7 @@ import '../bloc/cart_cubit.dart';
 import '../models/saved_cart.dart';
 import '../models/customer.dart';
 import '../database/database_helper.dart';
+import '../widgets/app_notification.dart';
 
 class SavedCartsScreen extends StatefulWidget {
   const SavedCartsScreen({super.key});
@@ -37,12 +38,7 @@ class _SavedCartsScreenState extends State<SavedCartsScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd ładowania schowków: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppNotification.error(context, 'Błąd ładowania schowków');
       }
     }
   }
@@ -160,12 +156,7 @@ class _SavedCartsScreenState extends State<SavedCartsScreen> {
     final cartState = cartCubit.getCurrentCart();
 
     if (cartState.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Koszyk jest pusty'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppNotification.info(context, 'Koszyk jest pusty');
       return;
     }
 
@@ -186,21 +177,11 @@ class _SavedCartsScreenState extends State<SavedCartsScreen> {
       await _loadSavedCarts();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Schowek "$name" został zapisany'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppNotification.success(context, 'Schowek "$name" zapisany');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd zapisywania: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppNotification.error(context, 'Błąd zapisywania');
       }
     }
   }
@@ -263,22 +244,12 @@ class _SavedCartsScreenState extends State<SavedCartsScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Schowek "${cart.name}" został wczytany'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppNotification.success(context, 'Schowek "${cart.name}" wczytany');
         Navigator.of(context).pop(); // Go back to cart
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd wczytywania: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppNotification.error(context, 'Błąd wczytywania');
       }
     }
   }
@@ -312,21 +283,11 @@ class _SavedCartsScreenState extends State<SavedCartsScreen> {
       await _loadSavedCarts();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Schowek "${cart.name}" został usunięty'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppNotification.success(context, 'Schowek usunięty');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd usuwania: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppNotification.error(context, 'Błąd usuwania');
       }
     }
   }
@@ -344,21 +305,11 @@ class _SavedCartsScreenState extends State<SavedCartsScreen> {
       await _loadSavedCarts();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nazwa została zmieniona'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppNotification.success(context, 'Nazwa zmieniona');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Błąd zmiany nazwy: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppNotification.error(context, 'Błąd zmiany nazwy');
       }
     }
   }

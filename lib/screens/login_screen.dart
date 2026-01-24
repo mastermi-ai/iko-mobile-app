@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
-import 'dashboard_screen.dart';
+import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,8 +17,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _apiService = ApiService();
-  
+
   bool _isLoading = false;
+  bool _isCheckingLogin = true;
   String? _errorMessage;
 
   @override
@@ -26,7 +29,28 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _checkExistingLogin() async {
-    await _apiService.loadToken();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('saved_user');
+      final token = prefs.getString('auth_token');
+
+      if (token != null && userJson != null && mounted) {
+        await _apiService.loadToken();
+        final user = User.fromJson(jsonDecode(userJson));
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => MainScreen(user: user),
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      // Ignore errors, show login screen
+    }
+
+    if (mounted) {
+      setState(() => _isCheckingLogin = false);
+    }
   }
 
   Future<void> _login() async {
@@ -45,10 +69,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = User.fromJson(response['user']);
 
+      // Zapisz dane użytkownika do auto-logowania
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_user', jsonEncode(response['user']));
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => DashboardScreen(user: user),
+            builder: (context) => MainScreen(user: user),
           ),
         );
       }
@@ -62,6 +90,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pokaż loading podczas sprawdzania auto-logowania
+    if (_isCheckingLogin) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.business_center, size: 80, color: Colors.blue[700]),
+              const SizedBox(height: 16),
+              Text('IKO', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.blue[700])),
+              const SizedBox(height: 24),
+              const CircularProgressIndicator(),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -81,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.blue[700],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   Text(
                     'IKO',
                     textAlign: TextAlign.center,
@@ -92,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   const Text(
                     'Mobile Sales',
                     textAlign: TextAlign.center,
@@ -194,38 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Test credentials hint
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Dane testowe:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[900],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '• Użytkownik: demo_handlowiec',
-                          style: TextStyle(color: Colors.blue[800]),
-                        ),
-                        Text(
-                          '• Hasło: Test123!',
-                          style: TextStyle(color: Colors.blue[800]),
-                        ),
-                      ],
-                    ),
-                  ),
+
                 ],
               ),
             ),

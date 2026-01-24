@@ -4,172 +4,352 @@ import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../models/customer.dart';
 
-/// Cart state holding items and selected customer
+/// Multi-koszyk: Stan koszyka obsługujący wielu klientów jednocześnie
 ///
-/// LOGIKA NOWYCH KLIENTÓW (wymaganie klienta):
-/// - Jeśli `isNewCustomer` == true → zamówienie dla NOWEGO klienta
-/// - `newCustomerData` zawiera NIP, nazwę, adres (wpisywane w uwagi ZK)
-/// - Biuro tworzy kartę kontrahenta w nexo przed przetworzeniem
+/// LOGIKA:
+/// - Każdy klient ma swój osobny koszyk produktów
+/// - Można przełączać się między klientami
+/// - Zamówienie tworzone jest dla wszystkich klientów naraz
+/// - Opcjonalnie można obsłużyć "nowego klienta" (dane w uwagach)
 class CartState extends Equatable {
-  final List<CartItem> items;
-  final Customer? selectedCustomer;
+  /// Lista koszyków per klient
+  final List<CustomerCart> customerCarts;
 
-  /// Czy zamówienie jest dla nowego klienta (nie z bazy)
+  /// Aktualnie wybrany klient (do którego dodajemy produkty)
+  final Customer? activeCustomer;
+
+  /// Czy aktywny jest tryb "nowy klient" (nie z bazy)
   final bool isNewCustomer;
-  /// Dane nowego klienta: "NIP: xxx, Nazwa: xxx, Adres: xxx"
-  /// Wpisywane w pole UWAGI zamówienia (ZK) w nexo
+
+  /// Dane nowego klienta (NIP, nazwa, adres - do uwag ZK)
   final String? newCustomerData;
-  /// Dodatkowe uwagi do zamówienia
-  final String? orderNotes;
+
+  /// Produkty dla nowego klienta
+  final List<CartItem> newCustomerItems;
 
   const CartState({
-    this.items = const [],
-    this.selectedCustomer,
+    this.customerCarts = const [],
+    this.activeCustomer,
     this.isNewCustomer = false,
     this.newCustomerData,
-    this.orderNotes,
+    this.newCustomerItems = const [],
   });
 
-  /// Total number of items in cart
-  int get itemCount => items.fold(0, (sum, item) => sum + item.quantity);
-
-  /// Total cart value (netto) - CENY PÓŁKOWE (bazowe)
-  double get totalNetto => items.fold(0.0, (sum, item) => sum + item.totalNetto);
-
-  /// Total cart value (brutto with VAT)
-  double get totalBrutto => items.fold(0.0, (sum, item) => sum + item.totalBrutto);
-
-  /// Check if cart is ready for checkout
-  /// Można zamówić dla:
-  /// 1. Wybranego klienta z bazy
-  /// 2. LUB nowego klienta (z wypełnionymi danymi NIP/nazwa)
-  bool get canCheckout {
-    if (items.isEmpty) return false;
-
-    // Istniejący klient wybrany
-    if (selectedCustomer != null) return true;
-
-    // Nowy klient - musi mieć wypełnione dane
-    if (isNewCustomer && newCustomerData != null && newCustomerData!.trim().isNotEmpty) {
-      return true;
-    }
-
-    return false;
+  /// Całkowita liczba produktów we wszystkich koszykach
+  int get totalItemCount {
+    int count = customerCarts.fold(0, (sum, cart) => sum + cart.itemCount);
+    count += newCustomerItems.fold(0, (sum, item) => sum + item.quantity);
+    return count;
   }
 
-  /// Nazwa klienta do wyświetlenia
-  String get customerDisplayName {
-    if (selectedCustomer != null) return selectedCustomer!.name;
+  /// Liczba produktów w aktywnym koszyku (aktualny klient)
+  int get activeItemCount {
+    if (isNewCustomer) {
+      return newCustomerItems.fold(0, (sum, item) => sum + item.quantity);
+    }
+    if (activeCustomer == null) return 0;
+    final cart = customerCarts.firstWhere(
+      (c) => c.customer.id == activeCustomer!.id,
+      orElse: () => CustomerCart(customer: activeCustomer!, items: []),
+    );
+    return cart.itemCount;
+  }
+
+  /// Produkty aktywnego klienta
+  List<CartItem> get activeItems {
+    if (isNewCustomer) {
+      return newCustomerItems;
+    }
+    if (activeCustomer == null) return [];
+    final cart = customerCarts.firstWhere(
+      (c) => c.customer.id == activeCustomer!.id,
+      orElse: () => CustomerCart(customer: activeCustomer!, items: []),
+    );
+    return cart.items;
+  }
+
+  /// Całkowita wartość netto wszystkich koszyków
+  double get totalNetto {
+    double total = customerCarts.fold(0.0, (sum, cart) => sum + cart.totalNetto);
+    total += newCustomerItems.fold(0.0, (sum, item) => sum + item.totalNetto);
+    return total;
+  }
+
+  /// Całkowita wartość brutto wszystkich koszyków
+  double get totalBrutto {
+    double total = customerCarts.fold(0.0, (sum, cart) => sum + cart.totalBrutto);
+    total += newCustomerItems.fold(0.0, (sum, item) => sum + item.totalBrutto);
+    return total;
+  }
+
+  /// Liczba klientów w koszykach
+  int get customerCount {
+    int count = customerCarts.where((c) => c.items.isNotEmpty).length;
+    if (isNewCustomer && newCustomerItems.isNotEmpty) count++;
+    return count;
+  }
+
+  /// Czy są jakiekolwiek produkty do zamówienia
+  bool get hasItems => totalItemCount > 0;
+
+  /// Czy można złożyć zamówienie (są produkty i klienci)
+  bool get canCheckout {
+    // Sprawdź czy są niepuste koszyki
+    final hasCustomerItems = customerCarts.any((c) => c.items.isNotEmpty);
+    final hasNewCustomerItems = isNewCustomer && newCustomerItems.isNotEmpty && newCustomerData != null;
+    return hasCustomerItems || hasNewCustomerItems;
+  }
+
+  /// Nazwa aktywnego klienta do wyświetlenia
+  String get activeCustomerName {
     if (isNewCustomer) return 'NOWY KLIENT';
+    if (activeCustomer != null) return activeCustomer!.shortName ?? activeCustomer!.name;
     return 'Nie wybrano';
   }
 
-  /// Pełne uwagi do zamówienia (łącznie z danymi nowego klienta)
-  String? get fullOrderNotes {
-    final parts = <String>[];
-
-    // Dane nowego klienta jako pierwsza część uwag
-    if (isNewCustomer && newCustomerData != null && newCustomerData!.isNotEmpty) {
-      parts.add('[NOWY KLIENT]\n$newCustomerData');
-    }
-
-    // Dodatkowe uwagi
-    if (orderNotes != null && orderNotes!.isNotEmpty) {
-      parts.add(orderNotes!);
-    }
-
-    return parts.isEmpty ? null : parts.join('\n\n');
+  /// Liczba aktywnych koszyków (z produktami)
+  int get activeCartsCount {
+    int count = customerCarts.where((c) => c.items.isNotEmpty).length;
+    if (newCustomerItems.isNotEmpty) count++;
+    return count;
   }
 
   CartState copyWith({
-    List<CartItem>? items,
-    Customer? selectedCustomer,
-    bool clearCustomer = false,
+    List<CustomerCart>? customerCarts,
+    Customer? activeCustomer,
+    bool clearActiveCustomer = false,
     bool? isNewCustomer,
     String? newCustomerData,
     bool clearNewCustomerData = false,
-    String? orderNotes,
-    bool clearOrderNotes = false,
+    List<CartItem>? newCustomerItems,
   }) {
     return CartState(
-      items: items ?? this.items,
-      selectedCustomer: clearCustomer ? null : (selectedCustomer ?? this.selectedCustomer),
+      customerCarts: customerCarts ?? this.customerCarts,
+      activeCustomer: clearActiveCustomer ? null : (activeCustomer ?? this.activeCustomer),
       isNewCustomer: isNewCustomer ?? this.isNewCustomer,
       newCustomerData: clearNewCustomerData ? null : (newCustomerData ?? this.newCustomerData),
-      orderNotes: clearOrderNotes ? null : (orderNotes ?? this.orderNotes),
+      newCustomerItems: newCustomerItems ?? this.newCustomerItems,
     );
   }
 
+  // =====================================================
+  // LEGACY GETTERS (dla kompatybilności wstecznej)
+  // =====================================================
+
+  /// Produkty aktywnego klienta (legacy)
+  List<CartItem> get items => activeItems;
+
+  /// Liczba produktów aktywnego klienta (legacy)
+  int get itemCount => totalItemCount;
+
+  /// Wybrany klient (legacy)
+  Customer? get selectedCustomer => activeCustomer;
+
+  /// Nazwa klienta do wyświetlenia (legacy)
+  String get customerDisplayName => activeCustomerName;
+
+  /// Uwagi do zamówienia (legacy - tylko dla nowego klienta)
+  String? get fullOrderNotes {
+    if (isNewCustomer && newCustomerData != null && newCustomerData!.isNotEmpty) {
+      return '[NOWY KLIENT]\n$newCustomerData';
+    }
+    return null;
+  }
+
   @override
-  List<Object?> get props => [items, selectedCustomer, isNewCustomer, newCustomerData, orderNotes];
+  List<Object?> get props => [
+    customerCarts,
+    activeCustomer,
+    isNewCustomer,
+    newCustomerData,
+    newCustomerItems,
+  ];
 }
 
-/// Cart Cubit for managing shopping cart state
+/// Cart Cubit - zarządzanie multi-koszykiem
 class CartCubit extends Cubit<CartState> {
   CartCubit() : super(const CartState());
 
-  /// Add product to cart or increase quantity if already exists
+  /// Wybierz klienta jako aktywnego (do dodawania produktów)
+  void selectCustomer(Customer customer) {
+    // Sprawdź czy klient już ma koszyk
+    final existingIndex = state.customerCarts.indexWhere(
+      (c) => c.customer.id == customer.id,
+    );
+
+    if (existingIndex < 0) {
+      // Dodaj nowy pusty koszyk dla tego klienta
+      final carts = List<CustomerCart>.from(state.customerCarts);
+      carts.add(CustomerCart(customer: customer, items: []));
+      emit(state.copyWith(
+        customerCarts: carts,
+        activeCustomer: customer,
+        isNewCustomer: false,
+        clearNewCustomerData: true,
+      ));
+    } else {
+      emit(state.copyWith(
+        activeCustomer: customer,
+        isNewCustomer: false,
+      ));
+    }
+  }
+
+  /// Dodaj produkt do koszyka aktywnego klienta
   void addProduct(Product product, {int quantity = 1}) {
-    final items = List<CartItem>.from(state.items);
-    final existingIndex = items.indexWhere((item) => item.product.id == product.id);
+    if (state.isNewCustomer) {
+      _addProductToNewCustomer(product, quantity);
+      return;
+    }
+
+    if (state.activeCustomer == null) {
+      return;
+    }
+
+    final carts = List<CustomerCart>.from(state.customerCarts);
+    final customerIndex = carts.indexWhere(
+      (c) => c.customer.id == state.activeCustomer!.id,
+    );
+
+    if (customerIndex < 0) {
+      // Utwórz nowy koszyk dla klienta
+      carts.add(CustomerCart(
+        customer: state.activeCustomer!,
+        items: [CartItem(product: product, quantity: quantity)],
+      ));
+    } else {
+      // Dodaj do istniejącego koszyka
+      final cart = carts[customerIndex];
+      final items = List<CartItem>.from(cart.items);
+      final existingIndex = items.indexWhere((i) => i.product.id == product.id);
+
+      if (existingIndex >= 0) {
+        items[existingIndex] = items[existingIndex].copyWith(
+          quantity: items[existingIndex].quantity + quantity,
+        );
+      } else {
+        items.add(CartItem(product: product, quantity: quantity));
+      }
+
+      carts[customerIndex] = cart.copyWith(items: items);
+    }
+
+    emit(state.copyWith(customerCarts: carts));
+  }
+
+  void _addProductToNewCustomer(Product product, int quantity) {
+    final items = List<CartItem>.from(state.newCustomerItems);
+    final existingIndex = items.indexWhere((i) => i.product.id == product.id);
 
     if (existingIndex >= 0) {
-      // Product already in cart - increase quantity
       items[existingIndex] = items[existingIndex].copyWith(
         quantity: items[existingIndex].quantity + quantity,
       );
     } else {
-      // New product - add to cart
       items.add(CartItem(product: product, quantity: quantity));
     }
 
-    emit(state.copyWith(items: items));
+    emit(state.copyWith(newCustomerItems: items));
   }
 
-  /// Update quantity for specific cart item
-  void updateQuantity(Product product, int newQuantity) {
-    if (newQuantity <= 0) {
-      removeProduct(product);
+  /// Zmień ilość produktu w koszyku klienta
+  void updateQuantity(Product product, int newQuantity, {Customer? customer}) {
+    final targetCustomer = customer ?? state.activeCustomer;
+
+    if (state.isNewCustomer && customer == null) {
+      _updateNewCustomerQuantity(product, newQuantity);
       return;
     }
 
-    final items = List<CartItem>.from(state.items);
-    final index = items.indexWhere((item) => item.product.id == product.id);
+    if (targetCustomer == null) return;
 
-    if (index >= 0) {
-      items[index] = items[index].copyWith(quantity: newQuantity);
-      emit(state.copyWith(items: items));
+    if (newQuantity <= 0) {
+      removeProduct(product, customer: targetCustomer);
+      return;
+    }
+
+    final carts = List<CustomerCart>.from(state.customerCarts);
+    final customerIndex = carts.indexWhere(
+      (c) => c.customer.id == targetCustomer.id,
+    );
+
+    if (customerIndex < 0) return;
+
+    final cart = carts[customerIndex];
+    final items = List<CartItem>.from(cart.items);
+    final productIndex = items.indexWhere((i) => i.product.id == product.id);
+
+    if (productIndex >= 0) {
+      items[productIndex] = items[productIndex].copyWith(quantity: newQuantity);
+      carts[customerIndex] = cart.copyWith(items: items);
+      emit(state.copyWith(customerCarts: carts));
     }
   }
 
-  /// Remove product from cart
-  void removeProduct(Product product) {
-    final items = state.items.where((item) => item.product.id != product.id).toList();
-    emit(state.copyWith(items: items));
+  void _updateNewCustomerQuantity(Product product, int newQuantity) {
+    if (newQuantity <= 0) {
+      removeProductFromNewCustomer(product);
+      return;
+    }
+
+    final items = List<CartItem>.from(state.newCustomerItems);
+    final productIndex = items.indexWhere((i) => i.product.id == product.id);
+
+    if (productIndex >= 0) {
+      items[productIndex] = items[productIndex].copyWith(quantity: newQuantity);
+      emit(state.copyWith(newCustomerItems: items));
+    }
   }
 
-  /// Set customer for this order (istniejący klient z bazy)
-  void selectCustomer(Customer customer) {
+  /// Usuń produkt z koszyka klienta
+  void removeProduct(Product product, {Customer? customer}) {
+    final targetCustomer = customer ?? state.activeCustomer;
+
+    if (state.isNewCustomer && customer == null) {
+      removeProductFromNewCustomer(product);
+      return;
+    }
+
+    if (targetCustomer == null) return;
+
+    final carts = List<CustomerCart>.from(state.customerCarts);
+    final customerIndex = carts.indexWhere(
+      (c) => c.customer.id == targetCustomer.id,
+    );
+
+    if (customerIndex < 0) return;
+
+    final cart = carts[customerIndex];
+    final items = cart.items.where((i) => i.product.id != product.id).toList();
+    carts[customerIndex] = cart.copyWith(items: items);
+
+    emit(state.copyWith(customerCarts: carts));
+  }
+
+  void removeProductFromNewCustomer(Product product) {
+    final items = state.newCustomerItems.where((i) => i.product.id != product.id).toList();
+    emit(state.copyWith(newCustomerItems: items));
+  }
+
+  /// Usuń cały koszyk klienta
+  void removeCustomerCart(Customer customer) {
+    final carts = state.customerCarts.where(
+      (c) => c.customer.id != customer.id,
+    ).toList();
+
     emit(state.copyWith(
-      selectedCustomer: customer,
-      isNewCustomer: false,
-      clearNewCustomerData: true,
+      customerCarts: carts,
+      activeCustomer: state.activeCustomer?.id == customer.id ? null : state.activeCustomer,
+      clearActiveCustomer: state.activeCustomer?.id == customer.id,
     ));
   }
 
-  /// Clear selected customer
-  void clearCustomer() {
-    emit(state.copyWith(clearCustomer: true));
-  }
-
-  /// Ustaw jako zamówienie dla NOWEGO klienta
-  /// Dane klienta (NIP, nazwa, adres) wpisane w formularzu
-  /// Trafią do pola UWAGI zamówienia ZK w nexo
+  /// Ustaw tryb "nowy klient"
   void setNewCustomer(String customerData) {
     emit(state.copyWith(
       isNewCustomer: true,
       newCustomerData: customerData,
-      clearCustomer: true,  // Usuń wybranego klienta z bazy
+      clearActiveCustomer: true,
     ));
   }
 
@@ -178,24 +358,74 @@ class CartCubit extends Cubit<CartState> {
     emit(state.copyWith(
       isNewCustomer: false,
       clearNewCustomerData: true,
+      newCustomerItems: [],
     ));
   }
 
-  /// Ustaw dodatkowe uwagi do zamówienia
-  void setOrderNotes(String notes) {
-    emit(state.copyWith(orderNotes: notes));
+  /// Wyczyść wybranego klienta
+  void clearCustomer() {
+    emit(state.copyWith(clearActiveCustomer: true));
   }
 
-  /// Wyczyść uwagi
-  void clearOrderNotes() {
-    emit(state.copyWith(clearOrderNotes: true));
-  }
-
-  /// Clear entire cart
+  /// Wyczyść cały koszyk (wszystkich klientów)
   void clearCart() {
     emit(const CartState());
   }
 
-  /// Get current cart for order creation
+  /// Wyczyść koszyk tylko dla aktywnego klienta
+  void clearActiveCustomerCart() {
+    if (state.isNewCustomer) {
+      emit(state.copyWith(newCustomerItems: []));
+      return;
+    }
+
+    if (state.activeCustomer == null) return;
+
+    final carts = List<CustomerCart>.from(state.customerCarts);
+    final customerIndex = carts.indexWhere(
+      (c) => c.customer.id == state.activeCustomer!.id,
+    );
+
+    if (customerIndex >= 0) {
+      carts[customerIndex] = carts[customerIndex].copyWith(items: []);
+      emit(state.copyWith(customerCarts: carts));
+    }
+  }
+
+  /// Pobierz koszyk dla konkretnego klienta
+  CustomerCart? getCartForCustomer(Customer customer) {
+    try {
+      return state.customerCarts.firstWhere(
+        (c) => c.customer.id == customer.id,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Legacy: getCurrentCart dla kompatybilności
   CartState getCurrentCart() => state;
+
+  /// Czy zmieniany jest klient z niepustym koszykiem
+  bool get hasItemsForDifferentCustomer {
+    return state.customerCarts.any((c) => c.items.isNotEmpty);
+  }
+
+  /// Pobierz wszystkie niepuste koszyki (do tworzenia zamówień)
+  List<CustomerCart> getActiveCustomerCarts() {
+    return state.customerCarts.where((c) => c.items.isNotEmpty).toList();
+  }
+
+  /// Ustaw uwagi do zamówienia (legacy)
+  void setOrderNotes(String notes) {
+    // Uwagi są teraz tylko dla nowego klienta
+    if (state.isNewCustomer) {
+      emit(state.copyWith(newCustomerData: notes));
+    }
+  }
+
+  /// Wyczyść uwagi (legacy)
+  void clearOrderNotes() {
+    // Nic nie rób - uwagi są częścią danych nowego klienta
+  }
 }

@@ -5,6 +5,7 @@ import '../bloc/quotes_bloc.dart';
 import '../models/quote.dart';
 import '../database/database_helper.dart';
 import '../services/api_service.dart';
+import '../widgets/app_notification.dart';
 import 'quote_detail_screen.dart';
 
 class QuotesListScreen extends StatelessWidget {
@@ -44,12 +45,7 @@ class _QuotesListView extends StatelessWidget {
       body: BlocConsumer<QuotesBloc, QuotesState>(
         listener: (context, state) {
           if (state is QuotesError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            AppNotification.error(context, state.message);
           }
         },
         builder: (context, state) {
