@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Icon(Icons.business_center, size: 80, color: Colors.blue[700]),
               const SizedBox(height: 16),
-              Text('IKO', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.blue[700])),
+              Text('Master Seller', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.blue[700])),
               const SizedBox(height: 24),
               const CircularProgressIndicator(),
             ],
@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   Text(
-                    'IKO',
+                    'Master Seller',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
 
                   const Text(
-                    'Mobile Sales',
+                    'Główny sprzedawca',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 18,

@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -65,6 +65,13 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 4) {
+      // Add thumbnail columns to products for image caching
+      await db.execute(
+          'ALTER TABLE products ADD COLUMN thumbnail_base64 TEXT');
+      await db.execute(
+          'ALTER TABLE products ADD COLUMN thumbnail_synced_at TEXT');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -91,6 +98,8 @@ class DatabaseHelper {
         ean $textTypeNullable,
         active $integerType,
         synced_at $textTypeNullable,
+        thumbnail_base64 $textTypeNullable,
+        thumbnail_synced_at $textTypeNullable,
         PRIMARY KEY (id)
       )
     ''');

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/product.dart';
@@ -38,6 +39,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
+  Widget _buildProductImage() {
+    // Priorytet: thumbnailBase64 > imageUrl > placeholder
+    if (widget.product.thumbnailBase64 != null &&
+        widget.product.thumbnailBase64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(widget.product.thumbnailBase64!);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildPlaceholder();
+          },
+        );
+      } catch (e) {
+        return _buildPlaceholder();
+      }
+    } else if (widget.product.imageUrl != null &&
+        widget.product.imageUrl!.isNotEmpty) {
+      return Image.network(
+        widget.product.imageUrl!,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildPlaceholder();
+        },
+      );
+    }
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return const Center(
+      child: Icon(
+        Icons.inventory_2,
+        size: 100,
+        color: Colors.grey,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,32 +94,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image
+            // Product Image (z base64 thumbnail lub URL)
             Container(
               width: double.infinity,
               height: 300,
               color: Colors.grey[200],
-              child: widget.product.imageUrl != null
-                  ? Image.network(
-                      widget.product.imageUrl!,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 100,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    )
-                  : const Center(
-                      child: Icon(
-                        Icons.inventory_2,
-                        size: 100,
-                        color: Colors.grey,
-                      ),
-                    ),
+              child: _buildProductImage(),
             ),
 
             Padding(

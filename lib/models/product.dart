@@ -146,7 +146,8 @@ class Product {
       'ean': ean,
       'active': active ? 1 : 0,
       'synced_at': syncedAt?.toIso8601String(),
-      // thumbnail_base64 and thumbnail_synced_at NOT in local SQLite schema yet
+      'thumbnail_base64': thumbnailBase64,
+      'thumbnail_synced_at': thumbnailSyncedAt?.toIso8601String(),
     };
   }
 
