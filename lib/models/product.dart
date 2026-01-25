@@ -71,9 +71,18 @@ class Product {
       return 0.0;
     }
 
+    // Helper to parse int (can be String or num from API)
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return Product(
-      id: json['id'] as int,
-      clientId: json['clientId'] as int,
+      id: parseInt(json['id']),
+      clientId: parseInt(json['clientId']),
       nexoId: json['nexoId'] as String?,
       code: json['code'] as String,
       name: json['name'] as String,

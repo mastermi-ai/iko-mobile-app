@@ -60,9 +60,26 @@ class Customer {
       creditLimit != null && (balance ?? 0) > creditLimit!;
 
   factory Customer.fromJson(Map<String, dynamic> json) {
+    // Helper to parse int (can be String or num from API)
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    // Helper to parse double (can be String or num from API)
+    double? parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
     return Customer(
-      id: json['id'] as int,
-      clientId: json['clientId'] as int,
+      id: parseInt(json['id']),
+      clientId: parseInt(json['clientId']),
       nexoId: json['nexoId'] as String?,
       name: json['name'] as String,
       shortName: json['shortName'] as String?,
@@ -79,15 +96,11 @@ class Customer {
           ? DateTime.parse(json['syncedAt'] as String)
           : null,
       // Rozrachunki
-      balance: json['balance'] != null
-          ? (json['balance'] as num).toDouble()
-          : null,
+      balance: parseDouble(json['balance']),
       balanceUpdatedAt: json['balanceUpdatedAt'] != null
           ? DateTime.parse(json['balanceUpdatedAt'] as String)
           : null,
-      creditLimit: json['creditLimit'] != null
-          ? (json['creditLimit'] as num).toDouble()
-          : null,
+      creditLimit: parseDouble(json['creditLimit']),
     );
   }
 
