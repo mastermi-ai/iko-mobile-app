@@ -8,10 +8,15 @@ class ApiService {
   // Cloud API URL - serwer klienta (stały adres)
   static const String baseUrl = 'https://iko-grabos.com';
 
+  // Singleton pattern - jedna instancja z zachowanym tokenem
+  static final ApiService _instance = ApiService._internal();
+  factory ApiService() => _instance;
+
   late final Dio _dio;
   String? _token;
+  bool _initialized = false;
 
-  ApiService() {
+  ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 30),
@@ -24,6 +29,11 @@ class ApiService {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // Auto-load token if not loaded yet
+        if (!_initialized) {
+          await loadToken();
+          _initialized = true;
+        }
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }

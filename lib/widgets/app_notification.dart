@@ -30,8 +30,8 @@ class AppNotification {
       icon = Icons.info_outline;
     }
 
-    // Pobierz wysokość ekranu i oblicz pozycję na górze
-    final screenHeight = MediaQuery.of(context).size.height;
+    // Wyświetl powiadomienie na górze ekranu (pod AppBar)
+    // Nie przysłania dolnych przycisków akcji
     final topPadding = MediaQuery.of(context).padding.top;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -48,13 +48,20 @@ class AppNotification {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (onAction == null)
+              GestureDetector(
+                onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                child: const Icon(Icons.close, color: Colors.white70, size: 18),
+              ),
           ],
         ),
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
+        // Pozycja: na górze ekranu, pod paskiem stanu
         margin: EdgeInsets.only(
-          bottom: screenHeight - topPadding - 120,
+          top: topPadding + 56, // pod AppBar
+          bottom: MediaQuery.of(context).size.height - topPadding - 140,
           left: 16,
           right: 16,
         ),
@@ -68,13 +75,7 @@ class AppNotification {
                 textColor: Colors.white,
                 onPressed: onAction,
               )
-            : SnackBarAction(
-                label: '✕',
-                textColor: Colors.white70,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
-              ),
+            : null,
       ),
     );
   }
