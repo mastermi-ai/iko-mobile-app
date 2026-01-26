@@ -34,10 +34,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
     try {
       final apiService = ApiService();
-      await apiService.loadToken();
-      // Use nexoId for fetching order history from nexo PRO
-      final nexoId = widget.customer.nexoId ?? widget.customer.id.toString();
-      final history = await apiService.getCustomerOrderHistory(int.tryParse(nexoId) ?? widget.customer.id);
+      // ApiService is singleton and auto-loads token
+      final history = await apiService.getCustomerOrderHistory(widget.customer.id);
       if (mounted) {
         setState(() {
           _orderHistory = history;
