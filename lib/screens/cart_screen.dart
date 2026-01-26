@@ -365,7 +365,7 @@ class _CartItemRow extends StatelessWidget {
 }
 
 /// Kontrola ilości produktu
-class _QuantityControl extends StatelessWidget {
+class _QuantityControl extends StatefulWidget {
   final CartItem item;
   final Customer? customer;
 
@@ -375,50 +375,116 @@ class _QuantityControl extends StatelessWidget {
   });
 
   @override
+  State<_QuantityControl> createState() => _QuantityControlState();
+}
+
+class _QuantityControlState extends State<_QuantityControl> {
+  void _showQuantityDialog() {
+    final controller = TextEditingController(text: '${widget.item.quantity}');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Podaj ilość'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Ilość',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) => _submitQuantity(controller.text),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Anuluj'),
+          ),
+          ElevatedButton(
+            onPressed: () => _submitQuantity(controller.text),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitQuantity(String value) {
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0) {
+      context.read<CartCubit>().updateQuantity(
+            widget.item.product,
+            quantity,
+            customer: widget.customer,
+          );
+      Navigator.pop(context);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Przycisk minus - powiększone pole dotykowe 48x48
           InkWell(
             onTap: () {
               context.read<CartCubit>().updateQuantity(
-                    item.product,
-                    item.quantity - 1,
-                    customer: customer,
+                    widget.item.product,
+                    widget.item.quantity - 1,
+                    customer: widget.customer,
                   );
             },
+            borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
             child: Container(
-              padding: const EdgeInsets.all(6),
-              child: const Icon(Icons.remove, size: 18),
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              child: const Icon(Icons.remove, size: 24),
             ),
           ),
-          Container(
-            width: 36,
-            alignment: Alignment.center,
-            child: Text(
-              '${item.quantity}',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
+          // Ilość - klikalna do ręcznego wpisania
+          InkWell(
+            onTap: _showQuantityDialog,
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border.symmetric(
+                  vertical: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              child: Text(
+                '${widget.item.quantity}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
+          // Przycisk plus - powiększone pole dotykowe 48x48
           InkWell(
             onTap: () {
               context.read<CartCubit>().updateQuantity(
-                    item.product,
-                    item.quantity + 1,
-                    customer: customer,
+                    widget.item.product,
+                    widget.item.quantity + 1,
+                    customer: widget.customer,
                   );
             },
+            borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
             child: Container(
-              padding: const EdgeInsets.all(6),
-              child: const Icon(Icons.add, size: 18),
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              child: const Icon(Icons.add, size: 24),
             ),
           ),
         ],

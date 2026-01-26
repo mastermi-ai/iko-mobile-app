@@ -44,16 +44,26 @@ class AppNotification {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            // Przycisk X do zamknięcia
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+              child: const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Icon(Icons.close, color: Colors.white70, size: 20),
+              ),
+            ),
           ],
         ),
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        dismissDirection: DismissDirection.down,
+        dismissDirection: DismissDirection.horizontal,
         action: onAction != null
             ? SnackBarAction(
                 label: actionLabel ?? 'OK',
@@ -83,7 +93,7 @@ class AppNotification {
       context,
       message: message,
       isError: true,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 4),
     );
   }
 

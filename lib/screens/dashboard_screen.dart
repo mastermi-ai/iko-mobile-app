@@ -68,10 +68,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: Colors.grey[300],
       appBar: AppBar(
         title: const Text(
-          'IKO',
+          'Master Seller',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 18,
           ),
         ),
         backgroundColor: Colors.grey[800],
@@ -158,7 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Expanded(
                   child: const Text(
-                    'IKO COMPANY',
+                    'MASTER SELLER COMPANY',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -202,66 +202,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               child: Column(
                 children: [
-                  // Top section with logo - larger for better visibility
+                  // Top section with logo - maximized for better visibility
                   Expanded(
-                    flex: 40,
-                    child: Center(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Calculate logo size - bigger logo per client request
-                          final logoWidth = constraints.maxWidth * 0.55;
-                          final logoHeight = constraints.maxHeight * 0.85;
-
-                          return Image.asset(
-                            'assets/images/iko_logo.png',
-                            width: logoWidth,
-                            height: logoHeight,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback: Draw IKO logo similar to original
-                              return Container(
-                                width: logoWidth,
-                                height: logoHeight,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      const Color(0xFF2196F3),
-                                      const Color(0xFF1565C0),
-                                      const Color(0xFF0D47A1),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(logoHeight / 2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.3),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
+                    flex: 55,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      child: Image.asset(
+                        'assets/images/iko_logo_cropped.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback: Draw MS logo
+                          return Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0xFF2196F3),
+                                  Color(0xFF1565C0),
+                                  Color(0xFF0D47A1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(50),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    'IKO',
-                                    style: TextStyle(
-                                      fontSize: logoHeight * 0.5,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: 8,
-                                      fontStyle: FontStyle.italic,
-                                      shadows: const [
-                                        Shadow(
-                                          color: Colors.black38,
-                                          offset: Offset(3, 3),
-                                          blurRadius: 6,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'MS',
+                                style: TextStyle(
+                                  fontSize: 60,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 8,
+                                  fontStyle: FontStyle.italic,
                                 ),
-                              );
-                            },
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -284,19 +266,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 8),
 
                   // Bottom section with module buttons
                   Expanded(
-                    flex: 60,
+                    flex: 45,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         // Module icons (3x2 grid) - tablet optimized
                         Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
                               // First row
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -339,7 +323,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ],
                               ),
 
-                              const SizedBox(height: 25),
+                              const SizedBox(height: 20),
 
                               // Second row
                               Row(
@@ -385,6 +369,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                         ),
+                        ),
 
                         const SizedBox(height: 15),
 
@@ -410,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _ModuleButton extends StatelessWidget {
+class _ModuleButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -422,83 +407,98 @@ class _ModuleButton extends StatelessWidget {
   });
 
   @override
+  State<_ModuleButton> createState() => _ModuleButtonState();
+}
+
+class _ModuleButtonState extends State<_ModuleButton> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(70),
-      child: Container(
-        width: 130,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Outer gray ring with gradient + inner blue circle (matching original tablet style)
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.grey[200]!,
-                    Colors.grey[350]!,
-                    Colors.grey[400]!,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    blurRadius: 4,
-                    offset: const Offset(-2, -2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(10),
-              child: Container(
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: 130,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Outer gray ring with gradient + inner blue circle (matching original tablet style)
+              Container(
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF42A5F5), // Lighter blue at top
-                      Color(0xFF1976D2), // Medium blue
-                      Color(0xFF1565C0), // Darker blue at bottom
+                      Colors.grey[200]!,
+                      Colors.grey[350]!,
+                      Colors.grey[400]!,
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.4),
+                      color: Colors.black.withValues(alpha: 0.25),
                       blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      blurRadius: 4,
+                      offset: const Offset(-2, -2),
                     ),
                   ],
                 ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: Colors.white,
+                padding: const EdgeInsets.all(10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF42A5F5), // Lighter blue at top
+                        Color(0xFF1976D2), // Medium blue
+                        Color(0xFF1565C0), // Darker blue at bottom
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    size: 40,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+              const SizedBox(height: 8),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

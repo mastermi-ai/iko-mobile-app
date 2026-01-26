@@ -16,6 +16,68 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
+  int _currentImageIndex = 0;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Get list of images (currently just one, but ready for multiple)
+  List<Widget> _buildImageList() {
+    final images = <Widget>[];
+
+    // Add main thumbnail if exists
+    if (widget.product.thumbnailBase64 != null &&
+        widget.product.thumbnailBase64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(widget.product.thumbnailBase64!);
+        images.add(
+          Image.memory(
+            bytes,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+          ),
+        );
+      } catch (e) {
+        images.add(_buildPlaceholder());
+      }
+    } else if (widget.product.imageUrl != null &&
+        widget.product.imageUrl!.isNotEmpty) {
+      images.add(
+        Image.network(
+          widget.product.imageUrl!,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+        ),
+      );
+    }
+
+    // If no images, add placeholder
+    if (images.isEmpty) {
+      images.add(_buildPlaceholder());
+    }
+
+    return images;
+  }
+
+  Widget _buildPlaceholder() {
+    return const Center(
+      child: Icon(
+        Icons.inventory_2,
+        size: 100,
+        color: Colors.grey,
+      ),
+    );
+  }
 
   void _incrementQuantity() {
     setState(() {
@@ -31,6 +93,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  void _showQuantityDialog() {
+    final controller = TextEditingController(text: '$_quantity');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Podaj ilość'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Ilość',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) {
+            final qty = int.tryParse(value);
+            if (qty != null && qty > 0) {
+              setState(() => _quantity = qty);
+              Navigator.pop(context);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Anuluj'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final qty = int.tryParse(controller.text);
+              if (qty != null && qty > 0) {
+                setState(() => _quantity = qty);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _addToCart(BuildContext context) {
     context.read<CartCubit>().addProduct(widget.product, quantity: _quantity);
     AppNotification.cartAdded(context, widget.product.name, quantity: _quantity);
@@ -39,47 +144,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
-  Widget _buildProductImage() {
-    // Priorytet: thumbnailBase64 > imageUrl > placeholder
-    if (widget.product.thumbnailBase64 != null &&
-        widget.product.thumbnailBase64!.isNotEmpty) {
-      try {
-        final bytes = base64Decode(widget.product.thumbnailBase64!);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholder();
-          },
-        );
-      } catch (e) {
-        return _buildPlaceholder();
-      }
-    } else if (widget.product.imageUrl != null &&
-        widget.product.imageUrl!.isNotEmpty) {
-      return Image.network(
-        widget.product.imageUrl!,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholder();
-        },
-      );
-    }
-    return _buildPlaceholder();
-  }
-
-  Widget _buildPlaceholder() {
-    return const Center(
-      child: Icon(
-        Icons.inventory_2,
-        size: 100,
-        color: Colors.grey,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final images = _buildImageList();
+    final hasMultipleImages = images.length > 1;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Szczegóły produktu'),
@@ -94,12 +163,80 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image (z base64 thumbnail lub URL)
+            // Image Carousel
             Container(
               width: double.infinity,
               height: 300,
               color: Colors.grey[200],
-              child: _buildProductImage(),
+              child: Stack(
+                children: [
+                  // PageView for swiping images
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: images.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentImageIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: images[index],
+                      );
+                    },
+                  ),
+
+                  // Page indicator dots (only if multiple images)
+                  if (hasMultipleImages)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          images.length,
+                          (index) => Container(
+                            width: 10,
+                            height: 10,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentImageIndex == index
+                                  ? Colors.blue[700]
+                                  : Colors.grey[400],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Image counter (only if multiple images)
+                  if (hasMultipleImages)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '${_currentImageIndex + 1}/${images.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
 
             Padding(
@@ -237,7 +374,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Quantity Selector
+                  // Quantity Selector - improved UX
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -256,18 +393,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 20),
-                        // Minus button
+                        // Minus button - 48x48 touch target
                         Material(
                           color: _quantity > 1 ? Colors.blue[700] : Colors.grey[400],
                           borderRadius: BorderRadius.circular(8),
                           child: InkWell(
                             onTap: _quantity > 1 ? _decrementQuantity : null,
                             borderRadius: BorderRadius.circular(8),
-                            child: Container(
+                            child: const SizedBox(
                               width: 48,
                               height: 48,
-                              alignment: Alignment.center,
-                              child: const Icon(
+                              child: Icon(
                                 Icons.remove,
                                 color: Colors.white,
                                 size: 28,
@@ -275,30 +411,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ),
                         ),
-                        // Quantity display
-                        Container(
-                          width: 80,
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$_quantity',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
+                        // Quantity display - tappable to enter manually
+                        GestureDetector(
+                          onTap: _showQuantityDialog,
+                          child: Container(
+                            width: 80,
+                            height: 48,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$_quantity',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                        // Plus button
+                        // Plus button - 48x48 touch target
                         Material(
                           color: Colors.blue[700],
                           borderRadius: BorderRadius.circular(8),
                           child: InkWell(
                             onTap: _incrementQuantity,
                             borderRadius: BorderRadius.circular(8),
-                            child: Container(
+                            child: const SizedBox(
                               width: 48,
                               height: 48,
-                              alignment: Alignment.center,
-                              child: const Icon(
+                              child: Icon(
                                 Icons.add,
                                 color: Colors.white,
                                 size: 28,
