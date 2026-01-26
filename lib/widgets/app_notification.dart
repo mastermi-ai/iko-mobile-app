@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 /// Klasa do wyświetlania powiadomień w aplikacji
-/// Powiadomienia wyświetlane są u góry ekranu, nie przysłaniają przycisków akcji
+/// Powiadomienia wyświetlane są na dole ekranu, znikają automatycznie
 class AppNotification {
-  /// Pokaż krótkie powiadomienie (toast) u góry ekranu
+  /// Pokaż krótkie powiadomienie (toast)
   static void show(
     BuildContext context, {
     required String message,
@@ -30,10 +30,6 @@ class AppNotification {
       icon = Icons.info_outline;
     }
 
-    // Wyświetl powiadomienie na górze ekranu (pod AppBar)
-    // Nie przysłania dolnych przycisków akcji
-    final topPadding = MediaQuery.of(context).padding.top;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -43,32 +39,21 @@ class AppNotification {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 14, color: Colors.white),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (onAction == null)
-              GestureDetector(
-                onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                child: const Icon(Icons.close, color: Colors.white70, size: 18),
-              ),
           ],
         ),
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        // Pozycja: na górze ekranu, pod paskiem stanu
-        margin: EdgeInsets.only(
-          top: topPadding + 56, // pod AppBar
-          bottom: MediaQuery.of(context).size.height - topPadding - 140,
-          left: 16,
-          right: 16,
-        ),
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        dismissDirection: DismissDirection.horizontal,
+        dismissDirection: DismissDirection.down,
         action: onAction != null
             ? SnackBarAction(
                 label: actionLabel ?? 'OK',
