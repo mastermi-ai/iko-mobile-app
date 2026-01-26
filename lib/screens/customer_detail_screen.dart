@@ -8,6 +8,12 @@ import '../../widgets/app_notification.dart';
 import '../../database/database_helper.dart';
 import 'products_list_screen.dart';
 
+// Polish month names for date formatting (avoid locale issues)
+const _polishMonths = [
+  '', 'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
+  'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'
+];
+
 class CustomerDetailScreen extends StatefulWidget {
   final Customer customer;
 
@@ -43,45 +49,63 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       try {
         final appOrders = await apiService.getCustomerOrders(widget.customer.id);
         for (final order in appOrders) {
-          allOrders.add(_OrderData(
-            id: order['id'] as int,
-            documentNumber: order['orderNumber'] ?? order['nexoDocId'] ?? 'ZK #${order['id']}',
-            documentType: 'ZK',
-            documentDate: DateTime.parse(order['orderDate'] ?? order['createdAt']),
-            totalNetto: (order['totalNetto'] as num?)?.toDouble() ?? 0,
-            totalBrutto: (order['totalBrutto'] as num?)?.toDouble() ?? 0,
-            status: order['status'] ?? 'completed',
-            items: (order['items'] as List<dynamic>?)?.map((item) => _OrderItemData(
-              productCode: item['productCode'] ?? '',
-              productName: item['productName'] ?? '',
-              quantity: (item['quantity'] as num?)?.toDouble() ?? 1,
-              priceNetto: (item['priceNetto'] as num?)?.toDouble() ?? 0,
-            )).toList() ?? [],
-            isFromApp: true,
-          ));
+          try {
+            final dateStr = order['orderDate'] ?? order['createdAt'];
+            final orderDate = dateStr != null ? DateTime.tryParse(dateStr) ?? DateTime.now() : DateTime.now();
+            
+            allOrders.add(_OrderData(
+              id: (order['id'] as num?)?.toInt() ?? 0,
+              documentNumber: order['orderNumber']?.toString() ?? order['nexoDocId']?.toString() ?? 'ZK #${order['id']}',
+              documentType: 'ZK',
+              documentDate: orderDate,
+              totalNetto: (order['totalNetto'] as num?)?.toDouble() ?? 0,
+              totalBrutto: (order['totalBrutto'] as num?)?.toDouble() ?? 0,
+              status: order['status']?.toString() ?? 'completed',
+              items: (order['items'] as List<dynamic>?)?.map((item) => _OrderItemData(
+                productCode: item['productCode']?.toString() ?? '',
+                productName: item['productName']?.toString() ?? '',
+                quantity: (item['quantity'] as num?)?.toDouble() ?? 1,
+                priceNetto: (item['priceNetto'] as num?)?.toDouble() ?? 0,
+              )).toList() ?? [],
+              isFromApp: true,
+            ));
+          } catch (e) {
+            // Skip malformed order
+            debugPrint('Error parsing app order: $e');
+          }
         }
       } catch (e) {
         // Ignore errors from app orders - may not have endpoint yet
+        debugPrint('Error loading app orders: $e');
       }
 
       // 2. Pobierz historię z nexo PRO (FS, PA, WZ)
       try {
         final nexoHistory = await apiService.getCustomerOrderHistory(widget.customer.id);
         for (final doc in nexoHistory) {
-          allOrders.add(_OrderData(
-            id: doc['id'] as int? ?? 0,
-            documentNumber: doc['documentNumber'] ?? '',
-            documentType: doc['documentType'] ?? '',
-            documentDate: DateTime.parse(doc['documentDate'] ?? DateTime.now().toIso8601String()),
-            totalNetto: (doc['totalNetto'] as num?)?.toDouble() ?? 0,
-            totalBrutto: (doc['totalBrutto'] as num?)?.toDouble() ?? 0,
-            status: 'completed',
-            items: [],
-            isFromApp: false,
-          ));
+          try {
+            final dateStr = doc['documentDate'];
+            final docDate = dateStr != null ? DateTime.tryParse(dateStr) ?? DateTime.now() : DateTime.now();
+            
+            allOrders.add(_OrderData(
+              id: (doc['id'] as num?)?.toInt() ?? 0,
+              documentNumber: doc['documentNumber']?.toString() ?? '',
+              documentType: doc['documentType']?.toString() ?? '',
+              documentDate: docDate,
+              totalNetto: (doc['totalNetto'] as num?)?.toDouble() ?? 0,
+              totalBrutto: (doc['totalBrutto'] as num?)?.toDouble() ?? 0,
+              status: 'completed',
+              items: [],
+              isFromApp: false,
+            ));
+          } catch (e) {
+            // Skip malformed document
+            debugPrint('Error parsing nexo doc: $e');
+          }
         }
       } catch (e) {
         // Ignore errors from nexo history
+        debugPrint('Error loading nexo history: $e');
       }
 
       // Sortuj po dacie (najnowsze pierwsze)
@@ -328,7 +352,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Widget _buildDateGroup(_OrderGroup group) {
-    final dateFormat = DateFormat('d MMMM yyyy', 'pl_PL');
     final isToday = DateUtils.isSameDay(group.date, DateTime.now());
     final isYesterday = DateUtils.isSameDay(
       group.date, 
@@ -341,7 +364,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     } else if (isYesterday) {
       dateLabel = 'Wczoraj';
     } else {
-      dateLabel = dateFormat.format(group.date);
+      // Format: "26 stycznia 2026" - without locale dependency
+      dateLabel = '${group.date.day} ${_polishMonths[group.date.month]} ${group.date.year}';
     }
 
     return Column(
