@@ -71,12 +71,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             ));
           } catch (e) {
             // Skip malformed order
-            debugPrint('Error parsing app order: $e');
           }
         }
       } catch (e) {
-        // Ignore errors from app orders - may not have endpoint yet
-        debugPrint('Error loading app orders: $e');
+        // Ignore errors from app orders
       }
 
       // 2. Pobierz historię z nexo PRO (FS, PA, WZ)
@@ -100,12 +98,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             ));
           } catch (e) {
             // Skip malformed document
-            debugPrint('Error parsing nexo doc: $e');
           }
         }
       } catch (e) {
         // Ignore errors from nexo history
-        debugPrint('Error loading nexo history: $e');
       }
 
       // Sortuj po dacie (najnowsze pierwsze)

@@ -133,19 +133,14 @@ class SyncService {
   /// Sync products from server to local DB
   Future<int> syncProducts() async {
     try {
-      await _apiService.loadToken(); // Load saved token before API call
-      print('[SYNC] syncProducts: Token loaded, calling API...');
+      await _apiService.loadToken();
       final products = await _apiService.syncProducts();
-      print('[SYNC] syncProducts: Got ${products.length} products from API');
       if (products.isNotEmpty) {
         await _dbHelper.insertProducts(products);
-        print('[SYNC] syncProducts: Inserted ${products.length} products to DB');
         return products.length;
       }
-    } catch (e, stackTrace) {
-      // Log the error for debugging
-      print('[SYNC] syncProducts ERROR: $e');
-      print('[SYNC] syncProducts STACK: $stackTrace');
+    } catch (e) {
+      // Sync will retry on next attempt
     }
     return 0;
   }
@@ -153,19 +148,14 @@ class SyncService {
   /// Sync customers from server to local DB
   Future<int> syncCustomers() async {
     try {
-      await _apiService.loadToken(); // Load saved token before API call
-      print('[SYNC] syncCustomers: Token loaded, calling API...');
+      await _apiService.loadToken();
       final customers = await _apiService.syncCustomers();
-      print('[SYNC] syncCustomers: Got ${customers.length} customers from API');
       if (customers.isNotEmpty) {
         await _dbHelper.insertCustomers(customers);
-        print('[SYNC] syncCustomers: Inserted ${customers.length} customers to DB');
         return customers.length;
       }
-    } catch (e, stackTrace) {
-      // Log the error for debugging
-      print('[SYNC] syncCustomers ERROR: $e');
-      print('[SYNC] syncCustomers STACK: $stackTrace');
+    } catch (e) {
+      // Sync will retry on next attempt
     }
     return 0;
   }

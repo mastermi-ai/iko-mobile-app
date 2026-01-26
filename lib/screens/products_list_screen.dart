@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/products_bloc.dart';
@@ -335,33 +334,6 @@ class ProductCard extends StatelessWidget {
     required this.onTap,
   });
 
-  Widget _buildProductThumbnail() {
-    // Priorytet: thumbnailBase64 > imageUrl > placeholder
-    if (product.thumbnailBase64 != null && product.thumbnailBase64!.isNotEmpty) {
-      try {
-        final bytes = base64Decode(product.thumbnailBase64!);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
-          },
-        );
-      } catch (e) {
-        return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
-      }
-    } else if (product.imageUrl != null && product.imageUrl!.isNotEmpty) {
-      return Image.network(
-        product.imageUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
-        },
-      );
-    }
-    return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -373,7 +345,7 @@ class ProductCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Product Image (z base64 thumbnail lub URL)
+              // Product Image
               Container(
                 width: 80,
                 height: 80,
@@ -381,10 +353,7 @@ class ProductCard extends StatelessWidget {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildProductThumbnail(),
-                ),
+                child: const Icon(Icons.inventory_2, size: 40, color: Colors.grey),
               ),
               const SizedBox(width: 12),
 
