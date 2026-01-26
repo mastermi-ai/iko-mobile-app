@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../models/customer.dart';
-import '../../models/cart_item.dart';
 import '../../bloc/cart_cubit.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_notification.dart';
@@ -160,10 +159,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       final products = await dbHelper.searchProducts(item.productCode);
       if (products.isNotEmpty) {
         final product = products.first;
-        cartCubit.addItem(CartItem(
-          product: product,
-          quantity: item.quantity.toInt(),
-        ));
+        cartCubit.addProduct(product, quantity: item.quantity.toInt());
         addedCount++;
       }
     }
