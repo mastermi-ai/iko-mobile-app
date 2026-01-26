@@ -198,13 +198,40 @@ class ApiService {
     }
   }
 
-  // Get Customer Order History (by customer id)
+  // Get Customer Order History from nexo PRO (invoices, etc.)
   Future<List<Map<String, dynamic>>> getCustomerOrderHistory(int customerId) async {
     try {
       final response = await _dio.get('/orders/history/customer/$customerId');
       return List<Map<String, dynamic>>.from(response.data);
     } on DioException catch (e) {
       throw Exception('Failed to get order history: ${e.message}');
+    }
+  }
+
+  // Get Customer Orders from our app (ZK documents)
+  Future<List<Map<String, dynamic>>> getCustomerOrders(int customerId) async {
+    try {
+      final response = await _dio.get('/orders/customer/$customerId');
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      // If endpoint doesn't exist, return empty list
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      throw Exception('Failed to get customer orders: ${e.message}');
+    }
+  }
+
+  // Get Order details with items
+  Future<Map<String, dynamic>?> getOrderDetails(int orderId) async {
+    try {
+      final response = await _dio.get('/orders/$orderId');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
+      throw Exception('Failed to get order details: ${e.message}');
     }
   }
 }
