@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/products_bloc.dart';
@@ -8,6 +9,34 @@ import '../../services/api_service.dart';
 import '../../widgets/app_notification.dart';
 import 'product_detail_screen.dart';
 import 'barcode_scanner_screen.dart';
+
+/// Helper function to build product thumbnail from base64 or URL
+Widget _buildProductThumbnail(Product product) {
+  // Priority: thumbnailBase64 > imageUrl > placeholder
+  if (product.thumbnailBase64 != null && product.thumbnailBase64!.isNotEmpty) {
+    try {
+      final bytes = base64Decode(product.thumbnailBase64!);
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
+        },
+      );
+    } catch (e) {
+      return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
+    }
+  } else if (product.imageUrl != null && product.imageUrl!.isNotEmpty) {
+    return Image.network(
+      product.imageUrl!,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
+      },
+    );
+  }
+  return const Icon(Icons.inventory_2, size: 40, color: Colors.grey);
+}
 
 class ProductsListScreen extends StatelessWidget {
   final bool autoFocusSearch;
@@ -345,7 +374,7 @@ class ProductCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Product Image
+              // Product Image with thumbnail
               Container(
                 width: 80,
                 height: 80,
@@ -353,7 +382,10 @@ class ProductCard extends StatelessWidget {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.inventory_2, size: 40, color: Colors.grey),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: _buildProductThumbnail(product),
+                ),
               ),
               const SizedBox(width: 12),
 
